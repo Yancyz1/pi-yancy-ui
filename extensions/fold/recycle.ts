@@ -47,6 +47,15 @@ function tag(wrapper: object, inner: Component | undefined): void {
 }
 
 /**
+ * Attach a built-in component to one of our plain wrappers (e.g. a compact single-line
+ * `Text`) so a later expanded render can recycle it via {@link innerOf}.
+ */
+export function withInner(wrapper: Component, inner: Component | undefined): Component {
+	tag(wrapper, inner);
+	return wrapper;
+}
+
+/**
  * Call a built-in renderer with the component it expects. Retries once without a
  * `lastComponent` so a stale or foreign component can never cost the user a row.
  */

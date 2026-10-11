@@ -109,7 +109,8 @@ function fakeBase(tool, shell, sink) {
 }
 
 function toolSetup(overrides = {}) {
-	const config = { ...configMod.DEFAULT_CONFIG, ...overrides };
+	// Classic two-line mode unless a test explicitly opts into compact mode.
+	const config = { ...configMod.DEFAULT_CONFIG, compact: false, ...overrides };
 	const resolvers = [];
 	toolFoldMod.installToolFold({ registerToolRenderer: (r) => resolvers.push(r) }, config);
 	return { config, resolvers };
@@ -178,6 +179,22 @@ test("tool: a self-shell row is not double padded", () => {
 	assert(row.render(60)[0].startsWith("⏺ "), "expected no leading pad");
 });
 
+test("tool: an expanded call row uses a triangle prefix, keeping status colours", () => {
+	const { resolvers } = toolSetup();
+	const renderers = resolveTool(resolvers, "read", "default");
+	const base = { args: { path: "a" }, outputPad: 0, executionStarted: true };
+	const expanded = renderers.renderCall({ path: "a" }, theme, { ...base, expanded: true });
+	assert(expanded.render(60)[0].startsWith("▾ "), "expected a ▾ prefix when expanded");
+
+	// Collapsed (and contexts without an expanded field) keep the dot.
+	const collapsed = renderers.renderCall({ path: "a" }, theme, { ...base, expanded: false });
+	assert(collapsed.render(60)[0].startsWith("⏺ "), "expected the dot while collapsed");
+
+	// The triangle carries the status tone; the identity theme keeps the glyph only.
+	const failed = renderers.renderCall({ path: "a" }, theme, { ...base, expanded: true, isError: true });
+	assert(failed.render(60)[0].startsWith("▾ "), "failed expanded row keeps the triangle");
+});
+
 test("tool: the built-in always mutates its own component, never our wrapper", () => {
 	const { resolvers } = toolSetup();
 	const sink = {};
@@ -195,6 +212,76 @@ test("tool: expanded results pass through to the built-in renderer", () => {
 	const { resolvers } = toolSetup();
 	const out = flatten(renderResultOf(resolvers, "read", { expanded: true, result: textResult("hello") }));
 	includes(out, "NATIVE:expanded");
+	excludes(out, "⎿");
+});
+
+// ------------------------------------------------------------- compact mode ----
+
+test("compact: a finished tool renders one status line, no call or summary rows", () => {
+	const { resolvers } = toolSetup({ compact: true });
+	const out = flatten(
+		renderResultOf(resolvers, "read", {
+			args: { file_path: "D:/code/pi-ext/docs/ARCHITECTURE.md" },
+			result: textResult("a\nb\nc"),
+			durationMs: 2100,
+		}),
+	);
+	excludes(out, "⏺");
+	excludes(out, "⎿");
+	matches(out, /● read ARCHITECTURE\.md · 3 lines · 2\.1s/);
+});
+
+test("compact: failures keep a red-lit line with the outcome", () => {
+	const { resolvers } = toolSetup({ compact: true });
+	const out = flatten(
+		renderResultOf(resolvers, "bash", {
+			args: { command: "npm test" },
+			result: textResult("boom\nCommand exited with code 1."),
+			isError: true,
+		}),
+	);
+	matches(out, /● bash npm test · exit 1 · 1 line · boom/);
+	excludes(out, "⎿");
+});
+
+test("compact: a streaming result shows the running line", () => {
+	const { resolvers } = toolSetup({ compact: true });
+	const out = flatten(
+		renderResultOf(resolvers, "bash", { args: { command: "x" }, result: textResult(""), isPartial: true }),
+	);
+	matches(out, /● bash x · running…/);
+});
+
+test("compact: the call row stands down once a result exists, and shows running before it", () => {
+	const { resolvers } = toolSetup({ compact: true });
+	const renderers = resolveTool(resolvers, "read", "default");
+	const context = { args: { file_path: "a.md" }, outputPad: 0, executionStarted: true, isError: false, state: {} };
+
+	// Before any result: the call slot shows the running line.
+	const running = renderers.renderCall({ file_path: "a.md" }, theme, { ...context, expanded: false });
+	matches(flatten(running), /● read a\.md running…/);
+
+	// First result render flips the shared state.
+	renderers.renderResult(textResult("hello"), { expanded: false, isPartial: false }, theme, context);
+	assert(context.state[Symbol.for("pi-fold.has-result")], "result render must set the shared state");
+
+	// The call slot goes quiet on the next pass.
+	const quiet = renderers.renderCall({ file_path: "a.md" }, theme, { ...context, expanded: false });
+	eq(flatten(quiet).trim(), "");
+});
+
+test("compact: expanding restores the native call row verbatim", () => {
+	const { resolvers } = toolSetup({ compact: true });
+	const renderers = resolveTool(resolvers, "read", "default");
+	const context = { args: { file_path: "a.md" }, outputPad: 0, executionStarted: true, isError: false, state: {} };
+	const row = renderers.renderCall({ file_path: "a.md" }, theme, { ...context, expanded: true });
+	includes(flatten(row), "CALL:read");
+});
+
+test("compact: a summary-less config still shows the tool digest", () => {
+	const { resolvers } = toolSetup({ compact: true, summary: false, preview: false });
+	const out = flatten(renderResultOf(resolvers, "grep", { args: { pattern: "fold" }, result: textResult("x") }));
+	matches(out, /● grep fold/);
 	excludes(out, "⎿");
 });
 

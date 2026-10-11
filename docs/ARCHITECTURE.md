@@ -45,6 +45,29 @@ Everything in the collapsed path is derived from data Pi already gives the rende
 `registerToolRenderer` hands us the built-in renderers. We wrap them and force
 `renderShell: "self"` so rows are flat and uniformly padded.
 
+### Compact mode (default)
+
+When `config.compact` is set, a finished tool renders as a single
+`● tool args · outcome` line: the leading dot is a status light (accent running,
+green success, red failure), the title carries a short argument digest
+(basename for file tools, first command line for shells), and the tail reuses
+`summarizeParts`. Two things make this safe without touching Pi's components:
+
+- `ToolRenderContext.expanded` is available to **both** renderers, so `renderCall`
+  returns an empty component only while collapsed and hands back Pi's native row the
+  moment the user expands.
+- Before the first result arrives (`isPartial` is `true` from construction), the call
+  slot shows `● tool args · running…`. `compactResultRow` flips a shared-state flag
+  (`Symbol.for("pi-fold.has-result")` on `context.state`, which Pi shares between the
+  call and result slots of one tool row) and defers a `context.invalidate()` via
+  `queueMicrotask` — invalidating synchronously would re-enter `updateDisplay` while
+  Pi is mid-rebuild. One extra pass per tool stands the call row down.
+
+The built-in call component stays reachable through `withInner`, so expanding still
+recycles it instead of leaking a new component per toggle.
+
+### Classic mode
+
 Two details matter:
 
 1. **Recycling.** Built-in renderers do `const text = context.lastComponent ?? new Text(...)`
@@ -53,7 +76,10 @@ Two details matter:
    every wrapper stores the built-in component under
    `Symbol.for("pi-fold.inner")`, and the next call passes that component back as
    `lastComponent`. `callBaseRenderer` also retries once without a `lastComponent` if
-   a stale or foreign component is supplied, so a row can never be lost.
+   a stale or foreign component is supplied, so a row can never be lost. Expanded call
+   rows additionally swap the `⏺` marker for a `▾` triangle in the same status colours
+   (`context.expanded`), so the toggle state is visible without changing anything the
+   built-in renderer drew.
 
 2. **Slice before highlight.** A preview takes at most `previewLines` rows. We split
    the text, slice it, and only then run `highlightCode` on the slice, so a 10,000-line
@@ -154,9 +180,10 @@ native returns an empty string when collapsed while pi-fold renders a preview �
 
 ## Testing
 
-- `npm test` — 87 assertions across tool folding (including component recycling,
-  every tool summary, error paths, partial results), thinking labels and timing, turn
-  summary events and gating, config validation, and factory/command integration.
+- `npm test` — 93 assertions across tool folding (including component recycling,
+  every tool summary, error paths, partial results, compact single-line mode), thinking
+  labels and timing, turn summary events and gating, config validation, and
+  factory/command integration.
 - `npm run smoke` — human-readable render dump for eyeballing changes.
 - `npm run bench` — the table above.
 - `npm run verify:host` — loads the extension through Pi's real bundled

@@ -6,6 +6,16 @@ Claude Code–style folding for [Pi](https://pi.dev): thinking blocks and tool o
 collapse to one line each, and expand again with Pi's own keys.
 
 ```
+● read src/injector.ts · 42 lines · 0.3s
+● bash npm test · exit 0 · 18 lines · 4.2s
+✻ Thought for 3.2s
+✻ Worked for 12.3s · 3 tools · thought 4.1s
+```
+
+Each finished tool call is a single status line (compact mode, the default).
+`/fold compact` switches back to the two-line layout:
+
+```
 ⏺ read  src/injector.ts
   ⎿  42 lines · 0.3s
      12  import { createInjector } from "./injector";
@@ -18,8 +28,6 @@ collapse to one line each, and expand again with Pi's own keys.
   ⎿ exit 0 · 18 lines · 4.2s
      ✓ 18 passed
      … 17 earlier lines (ctrl+o to expand)
-✻ Thought for 3.2s
-✻ Worked for 12.3s · 3 tools · thought 4.1s
 ```
 
 - **Assistant text is never folded.** Only thinking blocks and tool results are.
@@ -116,7 +124,7 @@ extension — see [Troubleshooting](#troubleshooting).
    ```
 
    You should see something like
-   `fold: enabled=true tools=true thinking=true summary=true preview=true/5 turn=true hints=true | patch=yes …`.
+   `fold: enabled=true tools=true compact=true thinking=true summary=true preview=true/5 turn=true hints=true | patch=yes …`.
 
 2. Enable thinking folding **once**:
 
@@ -134,7 +142,26 @@ extension — see [Troubleshooting](#troubleshooting).
 
 ## Reading the transcript
 
-### Tool call row
+### Compact tool line (default)
+
+```
+● read src/injector.ts · 42 lines · 0.3s
+```
+
+- The leading `●` is a status light: accent while the tool is running (the line reads
+  `● bash npm test · running…`), green once it succeeded, red when it failed.
+- After the tool name comes a short digest of the arguments: the basename for
+  `read`/`write`/`edit`, the first command line for `bash`, the pattern for `grep`, and
+  so on.
+- The rest is the same tool-specific summary as the classic mode (see the table
+  below). For a failed shell command the first output line is appended as the failure
+  reason.
+- While the tool runs and has not produced any output yet, the same line shows
+  `running…` in place of the summary.
+- Pressing `ctrl+o` (or clicking the row) expands to Pi's original call row and
+  complete result, exactly like the classic mode.
+
+### Tool call row (classic mode)
 
 ```
 ⏺ read  src/injector.ts
@@ -144,7 +171,7 @@ extension — see [Troubleshooting](#troubleshooting).
 running, error red when it failed, muted otherwise. The rest of the line is Pi's own
 call renderer, unchanged.
 
-### Collapsed result row
+### Collapsed result row (classic mode)
 
 ```
   ⎿  42 lines · 0.3s
@@ -166,6 +193,9 @@ call renderer, unchanged.
 
 Pressing `ctrl+o` (or clicking the row) replaces everything below `⏺` with Pi's
 original, complete result — same component Pi would have drawn without the extension.
+While expanded, the `⏺` marker itself becomes a `▾` triangle in the same status
+colours (red failed, accent running, green done), so the toggle state is visible at
+a glance.
 
 ### Per-tool summary reference
 
@@ -250,6 +280,7 @@ Everything lives under `/fold`.
 | `/fold` | Toggle folding on/off (same as `/fold toggle`) |
 | `/fold on` · `/fold off` | Enable / disable everything |
 | `/fold tools` | Toggle tool folding |
+| `/fold compact` | Toggle single-line tool rows (`● tool args · outcome`) |
 | `/fold thinking` | Toggle thinking folding |
 | `/fold summary` | Toggle the `⎿ summary` row |
 | `/fold preview` | Toggle the truncated preview |
@@ -292,6 +323,7 @@ Full field reference:
 |---|---|---|---|
 | `enabled` | boolean | `true` | Master switch. `false` restores Pi's stock rendering completely. |
 | `tools` | boolean | `true` | Fold tool results into `⎿ summary` rows. |
+| `compact` | boolean | `true` | Render each collapsed tool as one `● tool args · outcome` line instead of call + summary rows. |
 | `thinking` | boolean | `true` | Replace the hidden thinking label with `✻ …`. |
 | `summary` | boolean | `true` | Draw the `⎿ summary` line. |
 | `preview` | boolean | `true` | Draw the truncated preview under the summary. |

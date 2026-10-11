@@ -25,7 +25,7 @@ import { installToolFold } from "./tool-fold";
 import { installTurnSummary } from "./turn-summary";
 
 /** `/fold` options that change already-rendered tool rows. */
-const TOOL_AFFECTING_OPTIONS = new Set(["", "toggle", "on", "off", "tools", "summary", "preview", "hints"]);
+const TOOL_AFFECTING_OPTIONS = new Set(["", "toggle", "on", "off", "tools", "compact", "summary", "preview", "hints"]);
 /** `/fold` options that change already-rendered thinking rows. */
 const THINKING_AFFECTING_OPTIONS = new Set(["", "toggle", "on", "off", "thinking"]);
 
@@ -60,7 +60,7 @@ export default function foldExtension(pi: ExtensionAPI): void {
 
 	pi.registerCommand("fold", {
 		description:
-			"Fold thinking and tool output: /fold [on|off|tools|thinking|turn|summary|preview|hints|init|status]",
+			"Fold thinking and tool output: /fold [on|off|tools|compact|thinking|turn|summary|preview|hints|init|status]",
 		handler: async (args, ctx) => {
 			const option = args.trim().toLowerCase();
 			let message: string;
@@ -82,6 +82,10 @@ export default function foldExtension(pi: ExtensionAPI): void {
 				case "tools":
 					config.tools = !config.tools;
 					message = `tool folding ${config.tools ? "on" : "off"}`;
+					break;
+				case "compact":
+					config.compact = !config.compact;
+					message = `single-line tool rows ${config.compact ? "on" : "off"}`;
 					break;
 				case "thinking":
 					config.thinking = !config.thinking;

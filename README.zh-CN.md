@@ -6,6 +6,16 @@
 再用 Pi 自带的按键展开。
 
 ```
+● read src/injector.ts · 42 lines · 0.3s
+● bash npm test · exit 0 · 18 lines · 4.2s
+✻ Thought for 3.2s
+✻ Worked for 12.3s · 3 tools · thought 4.1s
+```
+
+每个已完成的工具调用收成一行状态行（compact 模式，默认开启）。`/fold compact`
+可以切回两行布局：
+
+```
 ⏺ read  src/injector.ts
   ⎿  42 lines · 0.3s
      12  import { createInjector } from "./injector";
@@ -18,8 +28,6 @@
   ⎿ exit 0 · 18 lines · 4.2s
      ✓ 18 passed
      … 17 earlier lines (ctrl+o to expand)
-✻ Thought for 3.2s
-✻ Worked for 12.3s · 3 tools · thought 4.1s
 ```
 
 - **助手正文永不折叠**，只折叠思考块和工具结果。
@@ -111,7 +119,7 @@ pi --no-extensions -e /path/to/pi-ext/extensions/fold/index.ts
    ```
 
    应该看到类似
-   `fold: enabled=true tools=true thinking=true summary=true preview=true/5 turn=true hints=true | patch=yes …` 的输出。
+   `fold: enabled=true tools=true compact=true thinking=true summary=true preview=true/5 turn=true hints=true | patch=yes …` 的输出。
 
 2. **做一次**思考折叠的初始化：
 
@@ -127,7 +135,22 @@ pi --no-extensions -e /path/to/pi-ext/extensions/fold/index.ts
 
 ## 看懂对话区
 
-### 工具调用行
+### 单行工具行（compact，默认）
+
+```
+● read src/injector.ts · 42 lines · 0.3s
+```
+
+- 开头的 `●` 是状态灯：执行中是 accent 色（此时整行是 `● bash npm test · running…`），
+  成功后变绿，失败变红。
+- 工具名后面是参数摘要：`read`/`write`/`edit` 显示文件名（basename），`bash` 显示
+  首条命令，`grep` 显示 pattern，以此类推。
+- 其余部分与经典模式的汇总相同（见下面那张表）。shell 失败时会在末尾追加输出首行
+  作为失败原因。
+- 工具还在执行、尚无任何输出时，同一行显示 `running…` 代替汇总。
+- 按 `ctrl+o`（或点击该行）展开成 Pi 原生的调用行和完整结果，与经典模式一致。
+
+### 工具调用行（经典模式）
 
 ```
 ⏺ read  src/injector.ts
@@ -136,7 +159,7 @@ pi --no-extensions -e /path/to/pi-ext/extensions/fold/index.ts
 `⏺` 是 pi-fold 的标记，颜色反映工具状态：执行中是 accent 色，失败是错误红，其余是弱化色。
 这一行剩下的部分是 Pi 自己的调用渲染器，原样保留。
 
-### 折叠后的结果行
+### 折叠后的结果行（经典模式）
 
 ```
   ⎿  42 lines · 0.3s
@@ -156,7 +179,8 @@ pi --no-extensions -e /path/to/pi-ext/extensions/fold/index.ts
   `app.tools.expand`，这里显示的会是你的按键。
 
 按 `ctrl+o`（或点击该行）后，`⏺` 以下的全部内容会换成 Pi 原本那份完整结果——就是不带扩展
-时 Pi 自己会画的那个组件。
+时 Pi 自己会画的那个组件。展开状态下，`⏺` 标记本身会变成 `▾` 三角形，并保留同样的状态色
+（红＝失败、accent＝执行中、绿＝成功），一眼就能看出当前是展开态。
 
 ### 各工具的汇总对照表
 
@@ -239,6 +263,7 @@ pi-fold 不新增任何按键，只复用 Pi 的：
 | `/fold` | 总开关取反（等同 `/fold toggle`） |
 | `/fold on` · `/fold off` | 全开 / 全关 |
 | `/fold tools` | 切换工具折叠 |
+| `/fold compact` | 切换单行工具行（`● 工具 参数 · 结果`） |
 | `/fold thinking` | 切换思考折叠 |
 | `/fold summary` | 切换 `⎿ summary` 汇总行 |
 | `/fold preview` | 切换截断预览 |
@@ -279,6 +304,7 @@ pi-fold 不新增任何按键，只复用 Pi 的：
 |---|---|---|---|
 | `enabled` | boolean | `true` | 总开关。`false` 会完全恢复 Pi 的原生渲染。 |
 | `tools` | boolean | `true` | 把工具结果折叠成 `⎿ summary` 行。 |
+| `compact` | boolean | `true` | 把每个折叠的工具收成一行 `● 工具 参数 · 结果`，而不是调用行 + 汇总行。 |
 | `thinking` | boolean | `true` | 把隐藏的思考标签替换为 `✻ …`。 |
 | `summary` | boolean | `true` | 是否绘制 `⎿ summary` 行。 |
 | `preview` | boolean | `true` | 是否在汇总下方绘制截断预览。 |
@@ -295,6 +321,7 @@ pi-fold 不新增任何按键，只复用 Pi 的：
 {
   "enabled": true,
   "tools": true,
+  "compact": true,
   "thinking": true,
   "summary": true,
   "preview": true,

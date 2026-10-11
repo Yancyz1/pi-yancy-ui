@@ -16,6 +16,8 @@ export interface FoldConfig {
 	enabled: boolean;
 	/** Fold tool result bodies down to a single summary row. */
 	tools: boolean;
+	/** Render each collapsed tool call as one `● tool args · result` line. */
+	compact: boolean;
 	/** Fold thinking blocks to a single label (thinking-fold module). */
 	thinking: boolean;
 	/** Render the `⎿ summary` row under a collapsed tool call. */
@@ -33,6 +35,7 @@ export interface FoldConfig {
 export const DEFAULT_CONFIG: FoldConfig = {
 	enabled: true,
 	tools: true,
+	compact: true,
 	thinking: true,
 	summary: true,
 	preview: true,
@@ -112,6 +115,7 @@ export function describeConfig(config: FoldConfig): string {
 	return [
 		`enabled=${config.enabled}`,
 		`tools=${config.tools}`,
+		`compact=${config.compact}`,
 		`thinking=${config.thinking}`,
 		`summary=${config.summary}`,
 		`preview=${config.preview}/${config.previewLines}`,

@@ -16,12 +16,12 @@
  */
 
 import type { ExtensionAPI, ToolRenderers } from "@earendil-works/pi-coding-agent";
-import { Text } from "@earendil-works/pi-tui";
+import { Text, type Component } from "@earendil-works/pi-tui";
 
 import { configGeneration, type FoldConfig } from "./config";
 import { hostHighlight, hostLanguageForPath } from "./host";
-import { bold, fg, keyLabel } from "./palette";
-import { Row, callBaseRenderer, emptyComponent, innerOf } from "./recycle";
+import { bold, fg, keyLabel, truncateToWidth } from "./palette";
+import { Row, callBaseRenderer, emptyComponent, innerOf, withInner } from "./recycle";
 
 type CallRenderer = NonNullable<ToolRenderers["renderCall"]>;
 type ResultRenderer = NonNullable<ToolRenderers["renderResult"]>;
@@ -55,20 +55,33 @@ export function installToolFold(pi: ExtensionAPI, config: FoldConfig): void {
 			 * The built-in rows relied on Pi's `Box` for horizontal padding. Rows that always
 			 * rendered themselves (`edit`) already pad.
 			 */
-			const padFor = (context: unknown): number => {
-				if (baseShell === "self") return 0;
-				const pad = (context as { outputPad?: unknown } | undefined)?.outputPad;
-				return typeof pad === "number" && Number.isFinite(pad) && pad > 0 ? Math.floor(pad) : 0;
-			};
+			const padFor = (context: unknown): number => padForShell(baseShell, context);
 
 			const prefixFor = (context: CallContext | undefined): string => fg(callTone(context), "⏺ ");
 
+			/**
+			 * Expanded rows swap the dot for a triangle so the toggle state is visible at a
+			 * glance, keeping the same status colours (red failed, accent running, green done).
+			 */
+			const expandedTone = (context: CallContext | undefined): string => {
+				if (context?.isError) return "error";
+				if (context?.isPartial === true) return "accent";
+				return "success";
+			};
+			const prefixForExpanded = (context: CallContext | undefined): string => fg(expandedTone(context), "▾ ");
+
 			renderers.renderCall = (args: unknown, theme: Theme, context: CallContext) => {
+				// Compact collapsed rows hide the native call row; the result line carries the
+				// tool, its arguments, and the outcome. `expanded` is part of ToolRenderContext,
+				// so the native row comes back verbatim the moment the user expands.
+				if (config.enabled && config.tools && config.compact && context?.expanded === false) {
+					return compactCallRow(toolName, args, context, padFor(context));
+				}
 				const inner = innerOf(context?.lastComponent);
 				const child = callBaseRenderer(baseRenderCall, [args, theme], context, inner);
 				return new Row(child ?? callFallback(toolName, args), {
 					pad: padFor(context),
-					prefix: prefixFor(context),
+					prefix: context?.expanded === true ? prefixForExpanded(context) : prefixFor(context),
 					signal: configGeneration,
 				});
 			};
@@ -91,6 +104,11 @@ export function installToolFold(pi: ExtensionAPI, config: FoldConfig): void {
 					});
 				}
 
+				// Compact mode: one `● tool args · outcome` line replaces call + summary rows.
+				if (config.compact) {
+					return compactResultRow(toolName, result, options, context, config, padFor(context));
+				}
+
 				if (!config.summary && !config.preview) {
 					return emptyComponent();
 				}
@@ -110,6 +128,142 @@ function callTone(context: CallContext | undefined): string {
 	if (context?.isError) return "error";
 	if (context?.executionStarted) return "accent";
 	return "muted";
+}
+
+function padForShell(shell: "default" | "self", context: unknown): number {
+	if (shell === "self") return 0;
+	const pad = (context as { outputPad?: unknown } | undefined)?.outputPad;
+	return typeof pad === "number" && Number.isFinite(pad) && pad > 0 ? Math.floor(pad) : 0;
+}
+
+// ------------------------------------------------------------- compact mode ----
+
+/**
+ * Compact mode collapses every finished tool call to a single line:
+ *
+ *   ● read ARCHITECTURE.md · 180 lines · 2.1s
+ *   ● bash npm test · exit 1 · Command not found · 3.2s
+ *
+ * The leading dot doubles as the status light: accent while running, green on
+ * success, red on failure. `ctrl+o` still expands to Pi's native two-row view.
+ */
+
+const COMPACT_ICON = "●";
+const COMPACT_DIGEST_WIDTH = 48;
+
+/** Set by {@link compactResultRow} once a result line has been rendered for this row. */
+const HAS_RESULT = Symbol.for("pi-fold.has-result");
+
+type CompactState = Record<PropertyKey, unknown> | undefined;
+
+/** A short, human-readable digest of the tool arguments for the single-line title. */
+function argDigest(args: unknown): string {
+	if (!args || typeof args !== "object") return "";
+	const record = args as Record<string, unknown>;
+	const raw =
+		typeof record.file_path === "string"
+			? record.file_path
+			: typeof record.path === "string"
+				? record.path
+				: typeof record.command === "string"
+					? record.command
+					: typeof record.pattern === "string"
+						? record.pattern
+						: typeof record.query === "string"
+							? record.query
+							: typeof record.url === "string"
+								? record.url
+								: "";
+	if (raw) return shorten(raw);
+	// Unknown tools: fall back to the first non-empty string argument.
+	for (const value of Object.values(record)) {
+		if (typeof value === "string" && value.trim().length > 0) return shorten(value);
+	}
+	return "";
+}
+
+function shorten(value: string): string {
+	const first = value
+		.split("\n")
+		.map((line) => line.trim())
+		.find((line) => line.length > 0);
+	if (!first) return "";
+	// A bare path shows as its basename; anything else keeps its first line.
+	const base = /[\\/]/.test(first) && !/\s/.test(first) ? (first.split(/[\\/]/).pop() ?? first) : first;
+	return truncateToWidth(base, COMPACT_DIGEST_WIDTH);
+}
+
+function compactTitle(toolName: string, args: unknown): string {
+	const digest = argDigest(args);
+	const name = bold(fg("toolTitle", toolName));
+	return digest ? `${name} ${fg("accent", digest)}` : name;
+}
+
+/**
+ * The call slot in compact mode. It shows a running line only until the first
+ * result render, then stands down so the result line is the single visible row.
+ */
+function compactCallRow(toolName: string, args: unknown, context: CallContext, pad: number): Component {
+	const state = context?.state as CompactState;
+	if (state && state[HAS_RESULT]) return emptyComponent();
+	// Keep the built-in component reachable so a later expanded render recycles it.
+	const inner = innerOf(context?.lastComponent);
+	const line = `${fg("accent", COMPACT_ICON)} ${compactTitle(toolName, args)} ${fg("muted", "running…")}`;
+	return withInner(new Text(line, pad, 0), inner);
+}
+
+function compactResultRow(
+	toolName: string,
+	result: RenderResult,
+	options: ResultOptions,
+	context: ResultContext,
+	config: FoldConfig,
+	pad: number,
+): Component {
+	const state = context?.state as CompactState;
+	if (state && !state[HAS_RESULT]) {
+		state[HAS_RESULT] = true;
+		// The call slot rendered its running row earlier in this same updateDisplay
+		// pass, before any result existed. Stand it down on the next pass; calling
+		// invalidate() synchronously would re-enter Pi mid-rebuild.
+		const invalidate = context?.invalidate;
+		if (typeof invalidate === "function") {
+			const owner = context;
+			queueMicrotask(() => {
+				try {
+					(invalidate as () => void).call(owner);
+				} catch {
+					// Cosmetic only; the stale running line is harmless.
+				}
+			});
+		}
+	}
+
+	const icon = options.isPartial
+		? fg("accent", COMPACT_ICON)
+		: context?.isError
+			? fg("error", COMPACT_ICON)
+			: fg("success", COMPACT_ICON);
+
+	let parts: string[] = [];
+	const text = contentText(result);
+	const lines = splitLines(isShellTool(toolName) ? shellOutput(text) : text);
+	if (config.summary) {
+		parts = summarizeParts(toolName, result, context, text, lines);
+	}
+	// The shell branch of summarizeParts reports only the exit code; a compact row has
+	// no preview beneath it, so surface the first output line as the failure reason.
+	if (context?.isError && isShellTool(toolName)) {
+		const reason = firstOf(lines);
+		if (reason) parts.push(fg("error", truncateToWidth(reason, COMPACT_DIGEST_WIDTH)));
+	}
+	if (options.isPartial) {
+		parts = [fg("muted", "running…")];
+	}
+
+	const separator = fg("muted", " · ");
+	const body = parts.length > 0 ? `${separator}${parts.join(separator)}` : "";
+	return new Text(`${icon} ${compactTitle(toolName, context?.args)}${body}`, pad, 0);
 }
 
 function callFallback(toolName: string, args: unknown): Text {
