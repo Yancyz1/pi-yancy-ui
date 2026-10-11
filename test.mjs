@@ -285,6 +285,26 @@ test("compact: a summary-less config still shows the tool digest", () => {
 	excludes(out, "⎿");
 });
 
+test("compact: rows indent by outputPad even for self-shell tools like edit", () => {
+	const { resolvers } = toolSetup({ compact: true });
+	const readOut = flatten(renderResultOf(resolvers, "read", { args: { path: "a.md" }, result: textResult("x") }));
+	assert(readOut.split("\n")[0].startsWith(" ● "), `read row should be padded, got ${JSON.stringify(readOut.split("\n")[0])}`);
+	const editOut = flatten(
+		renderResultOf(resolvers, "edit", { args: { path: "a.ts" }, result: textResult("ok", { diff: "+ 1 x" }) }),
+	);
+	assert(editOut.split("\n")[0].startsWith(" ● "), `edit row should align with read, got ${JSON.stringify(editOut.split("\n")[0])}`);
+});
+
+test("compact: editDiff=false drops the diff preview but keeps the status line", () => {
+	const { resolvers } = toolSetup({ compact: true, editDiff: false });
+	const out = flatten(
+		renderResultOf(resolvers, "edit", { args: { path: "a.ts" }, result: textResult("ok", { diff: "+ 1 x\n- 2 y" }) }),
+	);
+	matches(out, /● edit a\.ts · \+1 · -1/);
+	excludes(out, "x");
+	excludes(out, "y");
+});
+
 test("compact: edit shows its changed lines first, with a context line each side", () => {
 	const { resolvers } = toolSetup({ compact: true, previewLines: 3 });
 	const renderers = resolveTool(resolvers, "edit", "self");

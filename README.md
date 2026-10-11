@@ -286,6 +286,7 @@ Everything lives under `/fold`.
 | `/fold on` · `/fold off` | Enable / disable everything |
 | `/fold tools` | Toggle tool folding |
 | `/fold compact` | Toggle single-line tool rows (`● tool args · outcome`) |
+| `/fold diff` | Toggle the edit diff preview under compact `edit` rows |
 | `/fold thinking` | Toggle thinking folding |
 | `/fold summary` | Toggle the `⎿ summary` row |
 | `/fold preview` | Toggle the truncated preview |
@@ -329,6 +330,7 @@ Full field reference:
 | `enabled` | boolean | `true` | Master switch. `false` restores Pi's stock rendering completely. |
 | `tools` | boolean | `true` | Fold tool results into `⎿ summary` rows. |
 | `compact` | boolean | `true` | Render each collapsed tool as one `● tool args · outcome` line instead of call + summary rows. |
+| `editDiff` | boolean | `true` | Show the changed-lines diff preview under compact `edit` rows. |
 | `thinking` | boolean | `true` | Replace the hidden thinking label with `✻ …`. |
 | `summary` | boolean | `true` | Draw the `⎿ summary` line. |
 | `preview` | boolean | `true` | Draw the truncated preview under the summary. |

@@ -75,7 +75,9 @@ export function installToolFold(pi: ExtensionAPI, config: FoldConfig): void {
 				// tool, its arguments, and the outcome. `expanded` is part of ToolRenderContext,
 				// so the native row comes back verbatim the moment the user expands.
 				if (config.enabled && config.tools && config.compact && context?.expanded === false) {
-					return compactCallRow(toolName, args, context, padFor(context));
+					// Compact rows indent by outputPad regardless of the tool's own shell mode,
+					// so a self-padded tool (`edit`) lines up with everything else.
+					return compactCallRow(toolName, args, context, padForShell("default", context));
 				}
 				const inner = innerOf(context?.lastComponent);
 				const child = callBaseRenderer(baseRenderCall, [args, theme], context, inner);
@@ -106,7 +108,7 @@ export function installToolFold(pi: ExtensionAPI, config: FoldConfig): void {
 
 				// Compact mode: one `● tool args · outcome` line replaces call + summary rows.
 				if (config.compact) {
-					return compactResultRow(toolName, result, options, context, config, padFor(context));
+					return compactResultRow(toolName, result, options, context, config, padForShell("default", context));
 				}
 
 				if (!config.summary && !config.preview) {
@@ -268,7 +270,7 @@ function compactResultRow(
 	// The edit diff is the payload people actually read; append a changed-lines-first
 	// preview under the status line. Sliced from details.diff before colouring, so a
 	// huge diff costs budget rows, not the whole file.
-	if (toolName === "edit" && !options.isPartial) {
+	if (toolName === "edit" && config.editDiff && !options.isPartial) {
 		const diff = (result?.details as { diff?: unknown } | undefined)?.diff;
 		if (typeof diff === "string" && diff.length > 0) {
 			const budget = config.previewLines > 0 ? config.previewLines + 2 : 0;

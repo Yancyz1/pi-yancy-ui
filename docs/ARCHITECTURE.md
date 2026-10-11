@@ -62,7 +62,10 @@ green success, red failure), the title carries a short argument digest
   hint `… N more diff lines` (`previewLines: 0` disables). Slicing before colouring
   keeps constraint 4 intact and avoids the failure mode of capping Pi's rendered
   diff from the top, where the budget is spent on leading context lines. The call
-  row stays hidden; the previous `Capped`-wrapper approach was removed.
+  row stays hidden; the previous `Capped`-wrapper approach was removed. Gated by
+  `config.editDiff` (`/fold diff`).
+  Compact rows indent by `outputPad` regardless of the tool's own shell mode, so a
+  self-padded tool (`edit`) lines up with everything else.
   `write` stays a single line — its call-row preview is content, which the summary
   (`wrote N lines`) covers well enough.
 - Before the first result arrives (`isPartial` is `true` from construction), the call

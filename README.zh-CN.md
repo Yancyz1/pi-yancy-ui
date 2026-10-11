@@ -268,6 +268,7 @@ pi-fold 不新增任何按键，只复用 Pi 的：
 | `/fold on` · `/fold off` | 全开 / 全关 |
 | `/fold tools` | 切换工具折叠 |
 | `/fold compact` | 切换单行工具行（`● 工具 参数 · 结果`） |
+| `/fold diff` | 切换 compact `edit` 行下方的 diff 预览 |
 | `/fold thinking` | 切换思考折叠 |
 | `/fold summary` | 切换 `⎿ summary` 汇总行 |
 | `/fold preview` | 切换截断预览 |
@@ -309,6 +310,7 @@ pi-fold 不新增任何按键，只复用 Pi 的：
 | `enabled` | boolean | `true` | 总开关。`false` 会完全恢复 Pi 的原生渲染。 |
 | `tools` | boolean | `true` | 把工具结果折叠成 `⎿ summary` 行。 |
 | `compact` | boolean | `true` | 把每个折叠的工具收成一行 `● 工具 参数 · 结果`，而不是调用行 + 汇总行。 |
+| `editDiff` | boolean | `true` | 在 compact `edit` 行下方显示改动行 diff 预览。 |
 | `thinking` | boolean | `true` | 把隐藏的思考标签替换为 `✻ …`。 |
 | `summary` | boolean | `true` | 是否绘制 `⎿ summary` 行。 |
 | `preview` | boolean | `true` | 是否在汇总下方绘制截断预览。 |

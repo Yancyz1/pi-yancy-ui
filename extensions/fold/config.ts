@@ -28,6 +28,8 @@ export interface FoldConfig {
 	previewLines: number;
 	/** Append a one-line `✻ Worked for …` entry at the end of each turn. */
 	turnSummary: boolean;
+	/** Show the changed-lines diff preview under a compact `edit` row. */
+	editDiff: boolean;
 	/** Append a `ctrl+o` hint to collapsed rows that hide content. */
 	hints: boolean;
 }
@@ -41,6 +43,7 @@ export const DEFAULT_CONFIG: FoldConfig = {
 	preview: true,
 	previewLines: 5,
 	turnSummary: true,
+	editDiff: true,
 	hints: true,
 };
 
@@ -120,6 +123,7 @@ export function describeConfig(config: FoldConfig): string {
 		`summary=${config.summary}`,
 		`preview=${config.preview}/${config.previewLines}`,
 		`turn=${config.turnSummary}`,
+		`editDiff=${config.editDiff}`,
 		`hints=${config.hints}`,
 	].join(" ");
 }
