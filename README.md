@@ -1,5 +1,7 @@
 # pi-fold
 
+**English** · [中文](README.zh-CN.md)
+
 Claude Code–style folding for [Pi](https://pi.dev): thinking blocks and tool output
 collapse to one line each, and expand again with Pi's own keys.
 
