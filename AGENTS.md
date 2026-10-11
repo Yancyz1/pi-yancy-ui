@@ -8,7 +8,7 @@
 一个 Pi 扩展（包名 `pi-fold`），通过 `package.json` → `pi.extensions` →
 `extensions/fold/index.ts` 注册。它**只改渲染**：
 
-- **M1 工具折叠** —— 工具调用 + 结果收成 `⏺ 调用` / `⎿ 汇总`（外加几行预览），
+- **M1 工具折叠** —— 工具调用 + 结果收成 `● 调用` / `⎿ 汇总`（外加几行预览），
   用 Pi 自带的 `ctrl+o` 展开。
 - **M2 思考折叠** —— 隐藏的思考段收成 `✻ Thought for 3.2s`，用 Pi 自带的 `ctrl+t` 展开。
 - **M3 轮次汇总** —— 每轮追加一条 `✻ Worked for 12.3s · 3 tools · thought 4.1s`。

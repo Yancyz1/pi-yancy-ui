@@ -85,7 +85,7 @@ export function callBaseRenderer(
 
 /**
  * Wraps a built-in component to add left padding and an optional one-line prefix
- * (`⏺ `). Memoized by width and `signal`; a memo hit never re-renders the child.
+ * (`● `). Memoized by width and `signal`; a memo hit never re-renders the child.
  */
 export class Row implements Component {
 	readonly inner: Component;

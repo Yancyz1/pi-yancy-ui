@@ -23,7 +23,7 @@ extensions/fold/
 ```
 Pi tool_execution
       │
-      ├─ renderCall   ──▶ tool-fold wrapper ──▶ Row(prefix "⏺ ", padding) ──▶ built-in renderer
+      ├─ renderCall   ──▶ tool-fold wrapper ──▶ Row(prefix "● ", padding) ──▶ built-in renderer
       │
       └─ renderResult ──▶ collapsed? ── yes ──▶ Text(summary + preview + hint)
                                     └─ no  ──▶ Row(built-in renderer's own component)
@@ -89,7 +89,7 @@ Two details matter:
    `Symbol.for("pi-fold.inner")`, and the next call passes that component back as
    `lastComponent`. `callBaseRenderer` also retries once without a `lastComponent` if
    a stale or foreign component is supplied, so a row can never be lost. Expanded call
-   rows additionally swap the `⏺` marker for a `▾` triangle in the same status colours
+   rows additionally swap the `●` marker for a `▾` triangle in the same status colours
    (`context.expanded`), so the toggle state is visible without changing anything the
    built-in renderer drew.
 

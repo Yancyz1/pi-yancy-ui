@@ -169,14 +169,14 @@ test("tool: call row is prefixed and padded for a default shell", () => {
 	const renderers = resolveTool(resolvers, "read", "default");
 	const row = renderers.renderCall({ path: "a" }, theme, { args: { path: "a" }, outputPad: 1 });
 	const line = row.render(60)[0];
-	assert(line.startsWith(" ⏺ "), `expected ' ⏺ ' prefix, got ${JSON.stringify(line)}`);
+	assert(line.startsWith(" ● "), `expected ' ● ' prefix, got ${JSON.stringify(line)}`);
 });
 
 test("tool: a self-shell row is not double padded", () => {
 	const { resolvers } = toolSetup();
 	const renderers = resolveTool(resolvers, "edit", "self");
 	const row = renderers.renderCall({ path: "a" }, theme, { args: { path: "a" }, outputPad: 1 });
-	assert(row.render(60)[0].startsWith("⏺ "), "expected no leading pad");
+	assert(row.render(60)[0].startsWith("● "), "expected no leading pad");
 });
 
 test("tool: an expanded call row uses a triangle prefix, keeping status colours", () => {
@@ -188,7 +188,7 @@ test("tool: an expanded call row uses a triangle prefix, keeping status colours"
 
 	// Collapsed (and contexts without an expanded field) keep the dot.
 	const collapsed = renderers.renderCall({ path: "a" }, theme, { ...base, expanded: false });
-	assert(collapsed.render(60)[0].startsWith("⏺ "), "expected the dot while collapsed");
+	assert(collapsed.render(60)[0].startsWith("● "), "expected the dot while collapsed");
 
 	// The triangle carries the status tone; the identity theme keeps the glyph only.
 	const failed = renderers.renderCall({ path: "a" }, theme, { ...base, expanded: true, isError: true });
@@ -226,7 +226,6 @@ test("compact: a finished tool renders one status line, no call or summary rows"
 			durationMs: 2100,
 		}),
 	);
-	excludes(out, "⏺");
 	excludes(out, "⎿");
 	matches(out, /● read ARCHITECTURE\.md · 3 lines · 2\.1s/);
 });
@@ -636,7 +635,7 @@ test("error tone: an errored call row uses the error colour", () => {
 		const renderers = resolveTool(resolvers, "bash", "default");
 		renderers.renderCall({ command: "x" }, theme, { args: { command: "x" }, outputPad: 1, isError: true });
 		assert(
-			recorded.some(([role, text]) => role === "error" && text.includes("⏺")),
+			recorded.some(([role, text]) => role === "error" && text.includes("●")),
 			"expected an error-toned prefix",
 		);
 	} finally {

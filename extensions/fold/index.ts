@@ -1,7 +1,7 @@
 /**
  * pi-fold — Claude Code-style folding of Pi's thinking blocks and tool calls.
  *
- *   M1  tool rows fold to `⏺ call` + `⎿ summary`, expanded via Pi's own Ctrl+O.
+ *   M1  tool rows fold to `● call` + `⎿ summary`, expanded via Pi's own Ctrl+O.
  *   M2  thinking runs fold to `✻ Thinking…` / `✻ Thought for 3.2s`, expanded via
  *       Pi's own Ctrl+T.
  *

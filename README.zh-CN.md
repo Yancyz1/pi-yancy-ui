@@ -16,7 +16,7 @@
 可以切回两行布局：
 
 ```
-⏺ read  src/injector.ts
+● read  src/injector.ts
   ⎿  42 lines · 0.3s
      12  import { createInjector } from "./injector";
      13  return createInjector(options);
@@ -24,7 +24,7 @@
      15  export function bootstrap() {
      16    return start();
      … 37 more lines (ctrl+o to expand)
-⏺ bash  npm test
+● bash  npm test
   ⎿ exit 0 · 18 lines · 4.2s
      ✓ 18 passed
      … 17 earlier lines (ctrl+o to expand)
@@ -157,10 +157,10 @@ pi --no-extensions -e /path/to/pi-ext/extensions/fold/index.ts
 ### 工具调用行（经典模式）
 
 ```
-⏺ read  src/injector.ts
+● read  src/injector.ts
 ```
 
-`⏺` 是 pi-fold 的标记，颜色反映工具状态：执行中是 accent 色，失败是错误红，其余是弱化色。
+`●` 是 pi-fold 的标记，颜色反映工具状态：执行中是 accent 色，失败是错误红，其余是弱化色。
 这一行剩下的部分是 Pi 自己的调用渲染器，原样保留。
 
 ### 折叠后的结果行（经典模式）
@@ -182,8 +182,8 @@ pi --no-extensions -e /path/to/pi-ext/extensions/fold/index.ts
 - `ctrl+o` 是从 Pi 的按键表里查出来的，所以你如果重绑了
   `app.tools.expand`，这里显示的会是你的按键。
 
-按 `ctrl+o`（或点击该行）后，`⏺` 以下的全部内容会换成 Pi 原本那份完整结果——就是不带扩展
-时 Pi 自己会画的那个组件。展开状态下，`⏺` 标记本身会变成 `▾` 三角形，并保留同样的状态色
+按 `ctrl+o`（或点击该行）后，`●` 以下的全部内容会换成 Pi 原本那份完整结果——就是不带扩展
+时 Pi 自己会画的那个组件。展开状态下，`●` 标记本身会变成 `▾` 三角形，并保留同样的状态色
 （红＝失败、accent＝执行中、绿＝成功），一眼就能看出当前是展开态。
 
 ### 各工具的汇总对照表

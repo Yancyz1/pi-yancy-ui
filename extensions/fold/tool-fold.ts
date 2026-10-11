@@ -1,11 +1,11 @@
 /**
  * M1 — tool folding, Claude Code style.
  *
- *   collapsed  ->  ⏺ <native call row>
+ *   collapsed  ->  ● <native call row>
  *                  ⎿ <summary>
  *                    <first N lines of the result>
  *                    … N more lines (ctrl+o to expand)
- *   expanded   ->  ⏺ <native call row>
+ *   expanded   ->  ● <native call row>
  *                  <native result row, unchanged>
  *
  * Tool execution is untouched; only rendering is replaced, and the built-in
@@ -57,7 +57,7 @@ export function installToolFold(pi: ExtensionAPI, config: FoldConfig): void {
 			 */
 			const padFor = (context: unknown): number => padForShell(baseShell, context);
 
-			const prefixFor = (context: CallContext | undefined): string => fg(callTone(context), "⏺ ");
+			const prefixFor = (context: CallContext | undefined): string => fg(callTone(context), "● ");
 
 			/**
 			 * Expanded rows swap the dot for a triangle so the toggle state is visible at a

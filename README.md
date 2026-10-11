@@ -16,7 +16,7 @@ Each finished tool call is a single status line (compact mode, the default).
 `/fold compact` switches back to the two-line layout:
 
 ```
-⏺ read  src/injector.ts
+● read  src/injector.ts
   ⎿  42 lines · 0.3s
      12  import { createInjector } from "./injector";
      13  return createInjector(options);
@@ -24,7 +24,7 @@ Each finished tool call is a single status line (compact mode, the default).
      15  export function bootstrap() {
      16    return start();
      … 37 more lines (ctrl+o to expand)
-⏺ bash  npm test
+● bash  npm test
   ⎿ exit 0 · 18 lines · 4.2s
      ✓ 18 passed
      … 17 earlier lines (ctrl+o to expand)
@@ -169,10 +169,10 @@ extension — see [Troubleshooting](#troubleshooting).
 ### Tool call row (classic mode)
 
 ```
-⏺ read  src/injector.ts
+● read  src/injector.ts
 ```
 
-`⏺` is the pi-fold marker. Its colour tracks the tool state: accent while the tool is
+`●` is the pi-fold marker. Its colour tracks the tool state: accent while the tool is
 running, error red when it failed, muted otherwise. The rest of the line is Pi's own
 call renderer, unchanged.
 
@@ -196,9 +196,9 @@ call renderer, unchanged.
 - `ctrl+o` is rendered from Pi's keybinding table, so a user who rebinds
   `app.tools.expand` sees their own key.
 
-Pressing `ctrl+o` (or clicking the row) replaces everything below `⏺` with Pi's
+Pressing `ctrl+o` (or clicking the row) replaces everything below `●` with Pi's
 original, complete result — same component Pi would have drawn without the extension.
-While expanded, the `⏺` marker itself becomes a `▾` triangle in the same status
+While expanded, the `●` marker itself becomes a `▾` triangle in the same status
 colours (red failed, accent running, green done), so the toggle state is visible at
 a glance.
 
