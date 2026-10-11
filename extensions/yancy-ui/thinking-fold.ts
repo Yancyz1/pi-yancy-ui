@@ -17,7 +17,7 @@
 
 import { Markdown, MouseRegion, Text } from "@earendil-works/pi-tui";
 
-import type { FoldConfig } from "./config";
+import type { YancyUiConfig } from "./config";
 import { hostAssistantMessagePrototype } from "./host";
 import { fg, italic } from "./palette";
 import { installMethodPatch } from "./patch";
@@ -49,7 +49,7 @@ interface PatchableAssistant {
  * The live config object, not a snapshot: `/yancyui thinking` mutates this same object,
  * so reading it here keeps runtime toggles effective without reinstalling the patch.
  */
-let liveConfig: FoldConfig | undefined;
+let liveConfig: YancyUiConfig | undefined;
 
 const diagnostics = {
 	installed: false,
@@ -201,7 +201,7 @@ function decorate(instance: unknown, message: unknown): void {
 }
 
 /** Install (or reinstall) the patch. Returns an idempotent restore function. */
-export function installThinkingPatch(config: FoldConfig): () => void {
+export function installThinkingPatch(config: YancyUiConfig): () => void {
 	liveConfig = config;
 	diagnostics.installed = false;
 	const prototype = hostAssistantMessagePrototype();
@@ -232,7 +232,7 @@ export function installThinkingPatch(config: FoldConfig): () => void {
  */
 export function refreshThinkingLabels(
 	ctx: { mode?: string; ui?: { setHiddenThinkingLabel?: (label?: string) => void } },
-	config: FoldConfig,
+	config: YancyUiConfig,
 ): void {
 	if (ctx.mode !== "tui") return;
 	const label = config.enabled && config.thinking ? THINKING_OPEN_LABEL : undefined;

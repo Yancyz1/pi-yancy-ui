@@ -18,7 +18,7 @@
 import type { ExtensionAPI, ToolRenderers } from "@earendil-works/pi-coding-agent";
 import { Text, type Component } from "@earendil-works/pi-tui";
 
-import { configGeneration, type FoldConfig } from "./config";
+import { configGeneration, type YancyUiConfig } from "./config";
 import { hostHighlight, hostLanguageForPath } from "./host";
 import { bold, fg, keyLabel, truncateToWidth } from "./palette";
 import { Row, callBaseRenderer, emptyComponent, innerOf, withInner } from "./recycle";
@@ -31,7 +31,7 @@ type ResultOptions = Parameters<ResultRenderer>[1];
 type Theme = Parameters<CallRenderer>[1];
 type RenderResult = Parameters<ResultRenderer>[0];
 
-export function installToolFold(pi: ExtensionAPI, config: FoldConfig): void {
+export function installToolFold(pi: ExtensionAPI, config: YancyUiConfig): void {
 	try {
 		pi.registerToolRenderer((toolName, next) => {
 			let base: ToolRenderers | undefined;
@@ -219,7 +219,7 @@ function compactResultRow(
 	result: RenderResult,
 	options: ResultOptions,
 	context: ResultContext,
-	config: FoldConfig,
+	config: YancyUiConfig,
 	pad: number,
 ): Component {
 	const state = context?.state as CompactState;
@@ -540,7 +540,7 @@ function buildCollapsed(
 	result: RenderResult,
 	options: ResultOptions,
 	context: ResultContext,
-	config: FoldConfig,
+	config: YancyUiConfig,
 ): string[] {
 	const separator = fg("muted", " · ");
 	const headerPrefix = fg("dim", "⎿");

@@ -14,7 +14,7 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 
-import type { FoldConfig } from "./config";
+import type { YancyUiConfig } from "./config";
 import { fg } from "./palette";
 import { consumeThinkingMs } from "./thinking-fold";
 
@@ -34,7 +34,7 @@ interface TurnSummaryData {
 	outcome?: "completed" | "aborted" | "error";
 }
 
-export function installTurnSummary(pi: ExtensionAPI, config: FoldConfig): void {
+export function installTurnSummary(pi: ExtensionAPI, config: YancyUiConfig): void {
 	pi.registerEntryRenderer<TurnSummaryData>(ENTRY_TYPE, (entry, options) => {
 		const data = entry.data;
 		if (!data) return undefined;

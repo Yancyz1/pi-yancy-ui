@@ -17,7 +17,7 @@ import {
 	loadConfig,
 	saveConfig,
 	setHideThinkingBlock,
-	type FoldConfig,
+	type YancyUiConfig,
 } from "./config";
 import { rememberTheme } from "./palette";
 import { installThinkingPatch, describeThinkingDiagnostics, refreshThinkingLabels } from "./thinking-fold";
@@ -47,7 +47,7 @@ function refreshToolRows(ctx: ExtensionCommandContext): void {
 }
 
 export default function yancyUiExtension(pi: ExtensionAPI): void {
-	const config: FoldConfig = loadConfig();
+	const config: YancyUiConfig = loadConfig();
 	let restoreThinking = installThinkingPatch(config);
 
 	pi.registerFlag("yancyui", {

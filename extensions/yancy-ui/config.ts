@@ -11,7 +11,7 @@ import { dirname, join } from "node:path";
 
 import { hostAgentDir } from "./host";
 
-export interface FoldConfig {
+export interface YancyUiConfig {
 	/** Master switch. When off, every renderer passes through to the built-in one. */
 	enabled: boolean;
 	/** Fold tool result bodies down to a single summary row. */
@@ -34,7 +34,7 @@ export interface FoldConfig {
 	hints: boolean;
 }
 
-export const DEFAULT_CONFIG: FoldConfig = {
+export const DEFAULT_CONFIG: YancyUiConfig = {
 	enabled: true,
 	tools: true,
 	compact: true,
@@ -47,7 +47,7 @@ export const DEFAULT_CONFIG: FoldConfig = {
 	hints: true,
 };
 
-const CONFIG_KEYS = Object.keys(DEFAULT_CONFIG) as (keyof FoldConfig)[];
+const CONFIG_KEYS = Object.keys(DEFAULT_CONFIG) as (keyof YancyUiConfig)[];
 
 /**
  * Bumped whenever the live config object changes. Renderers include it in their
@@ -75,8 +75,8 @@ export function configPath(): string {
 	return join(configDir(), "yancy-ui.json");
 }
 
-export function loadConfig(): FoldConfig {
-	const config: FoldConfig = { ...DEFAULT_CONFIG };
+export function loadConfig(): YancyUiConfig {
+	const config: YancyUiConfig = { ...DEFAULT_CONFIG };
 	try {
 		const path = configPath();
 		if (!existsSync(path)) {
@@ -104,7 +104,7 @@ export function loadConfig(): FoldConfig {
 	return config;
 }
 
-export function saveConfig(config: FoldConfig): void {
+export function saveConfig(config: YancyUiConfig): void {
 	try {
 		const path = configPath();
 		mkdirSync(dirname(path), { recursive: true });
@@ -114,7 +114,7 @@ export function saveConfig(config: FoldConfig): void {
 	}
 }
 
-export function describeConfig(config: FoldConfig): string {
+export function describeConfig(config: YancyUiConfig): string {
 	return [
 		`enabled=${config.enabled}`,
 		`tools=${config.tools}`,
