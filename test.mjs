@@ -285,6 +285,48 @@ test("compact: a summary-less config still shows the tool digest", () => {
 	excludes(out, "⎿");
 });
 
+test("compact: edit keeps its native call row (the diff preview lives there)", () => {
+	const { resolvers } = toolSetup({ compact: true });
+	const renderers = resolveTool(resolvers, "edit", "self");
+	const context = { args: { path: "a.ts" }, outputPad: 0, executionStarted: true, isError: false, state: {}, expanded: false };
+	const row = renderers.renderCall({ path: "a.ts" }, theme, context);
+	includes(flatten(row), "CALL:edit");
+	// The result line is still the compact status line.
+	const out = flatten(renderers.renderResult(textResult("ok", { diff: "+a\n-b" }), { expanded: false, isPartial: false }, theme, context));
+	matches(out, /● edit a\.ts · \+1 · -1/);
+});
+
+test("compact: other tools still hide the call row", () => {
+	const { resolvers } = toolSetup({ compact: true });
+	const renderers = resolveTool(resolvers, "read", "default");
+	const row = renderers.renderCall({ path: "a.md" }, theme, { args: { path: "a.md" }, state: {}, expanded: false });
+	excludes(flatten(row), "CALL:read");
+});
+
+test("compact: the edit call row is capped with a hint", () => {
+	const { resolvers } = toolSetup({ compact: true, previewLines: 3 });
+	const multilineBase = () => ({
+		renderShell: "self",
+		renderCall: () => new Text(Array.from({ length: 10 }, (_, i) => `diff line ${i + 1}`).join("\n"), 0, 0),
+		renderResult: () => new Text("NATIVE", 0, 0),
+	});
+	const renderers = resolvers[0]("edit", multilineBase);
+	const out = flatten(
+		renderers.renderCall({ path: "a.ts" }, theme, { args: { path: "a.ts" }, outputPad: 0, state: {}, expanded: false }),
+	);
+	includes(out, "diff line 3");
+	excludes(out, "diff line 4");
+	matches(out, /… 7 more diff lines/);
+
+	// limit <= 0 disables the cap.
+	const { resolvers: uncapped } = toolSetup({ compact: true, previewLines: 0 });
+	const renderers3 = uncapped[0]("edit", multilineBase);
+	const out2 = flatten(
+		renderers3.renderCall({ path: "a.ts" }, theme, { args: { path: "a.ts" }, outputPad: 0, state: {}, expanded: false }),
+	);
+	includes(out2, "diff line 10");
+});
+
 test("tool: disabled folding passes through", () => {
 	const { resolvers } = toolSetup({ enabled: false });
 	includes(flatten(renderResultOf(resolvers, "read", { result: textResult("hello") })), "NATIVE:collapsed");

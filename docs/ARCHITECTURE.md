@@ -56,6 +56,13 @@ green success, red failure), the title carries a short argument digest
 - `ToolRenderContext.expanded` is available to **both** renderers, so `renderCall`
   returns an empty component only while collapsed and hands back Pi's native row the
   moment the user expands.
+- `edit` is carved out: its native call row carries the diff preview, so compact mode
+  keeps it wrapped in a `Capped` component that slices the rendered rows to
+  `previewLines` (a `… N more diff lines` hint replaces the tail; `limit <= 0`
+  disables the cap). Its built-in result renderer is still invoked for the side
+  effect of settling the call row's diff/error state; only the compact line is shown.
+  `write` stays a single line — its call-row preview is content, which the summary
+  (`wrote N lines`) covers well enough.
 - Before the first result arrives (`isPartial` is `true` from construction), the call
   slot shows `● tool args · running…`. `compactResultRow` flips a shared-state flag
   (`Symbol.for("pi-fold.has-result")` on `context.state`, which Pi shares between the
@@ -180,7 +187,7 @@ native returns an empty string when collapsed while pi-fold renders a preview �
 
 ## Testing
 
-- `npm test` — 93 assertions across tool folding (including component recycling,
+- `npm test` — 97 assertions across tool folding (including component recycling,
   every tool summary, error paths, partial results, compact single-line mode), thinking
   labels and timing, turn summary events and gating, config validation, and
   factory/command integration.

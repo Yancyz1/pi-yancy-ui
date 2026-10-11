@@ -20,7 +20,7 @@ import { Text, type Component } from "@earendil-works/pi-tui";
 
 import { configGeneration, type FoldConfig } from "./config";
 import { hostHighlight, hostLanguageForPath } from "./host";
-import { bold, fg, keyLabel, truncateToWidth } from "./palette";
+import { bold, fg, keyLabel, safeWidth, truncateToWidth } from "./palette";
 import { Row, callBaseRenderer, emptyComponent, innerOf, withInner } from "./recycle";
 
 type CallRenderer = NonNullable<ToolRenderers["renderCall"]>;
@@ -75,6 +75,19 @@ export function installToolFold(pi: ExtensionAPI, config: FoldConfig): void {
 				// tool, its arguments, and the outcome. `expanded` is part of ToolRenderContext,
 				// so the native row comes back verbatim the moment the user expands.
 				if (config.enabled && config.tools && config.compact && context?.expanded === false) {
+					// The edit call row carries the diff preview (Pi draws it there, not in the
+					// result), so compact mode keeps it — capped to a few rows. Everything else
+					// folds to the single status line.
+					if (toolName === "edit") {
+						const inner = innerOf(context?.lastComponent);
+						const child = callBaseRenderer(baseRenderCall, [args, theme], context, inner);
+						return new Capped(child ?? emptyComponent(), {
+							pad: padFor(context),
+							limit: config.previewLines,
+							hints: config.hints,
+							signal: configGeneration,
+						});
+					}
 					return compactCallRow(toolName, args, context, padFor(context));
 				}
 				const inner = innerOf(context?.lastComponent);
@@ -106,6 +119,12 @@ export function installToolFold(pi: ExtensionAPI, config: FoldConfig): void {
 
 				// Compact mode: one `● tool args · outcome` line replaces call + summary rows.
 				if (config.compact) {
+					if (toolName === "edit") {
+						// The built-in result renderer settles the call row's diff and error state
+						// (via state.callComponent). We only need that side effect; the compact
+						// line below is the visible result row.
+						callBaseRenderer(baseRenderResult, [result, options, theme], context, undefined);
+					}
 					return compactResultRow(toolName, result, options, context, config, padFor(context));
 				}
 
@@ -579,4 +598,68 @@ function buildCollapsed(
 		rows.push(`${codeIndent}${fg("muted", `… ${label}`)}${hint}`);
 	}
 	return rows;
+}
+
+/**
+ * Row-count cap around a native component that renders an unbounded payload (the
+ * edit call row's diff). The child still renders in full — the diff only exists as
+ * component output — but the transcript keeps a constant-ish number of rows, and
+ * `ctrl+o` shows the uncapped native view. A `limit <= 0` disables the cap.
+ */
+class Capped implements Component {
+	private readonly inner: Component;
+	private readonly pad: number;
+	private readonly limit: number;
+	private readonly hints: boolean;
+	private readonly signal: (() => number) | undefined;
+	private memo: { width: number; signal: number; lines: string[] } | undefined;
+
+	constructor(
+		inner: Component,
+		options: { pad?: number; limit?: number; hints?: boolean; signal?: () => number } = {},
+	) {
+		this.inner = inner;
+		this.pad = Math.max(0, Math.floor(options.pad ?? 0));
+		this.limit = Math.floor(options.limit ?? 0);
+		this.hints = options.hints ?? true;
+		this.signal = options.signal;
+	}
+
+	invalidate(): void {
+		this.memo = undefined;
+		try {
+			this.inner.invalidate();
+		} catch {
+			// A child that cannot invalidate is still rendered from its own state.
+		}
+	}
+
+	render(width: number): string[] {
+		const safe = safeWidth(width);
+		const signal = this.signal ? this.signal() : 0;
+		if (this.memo && this.memo.width === safe && this.memo.signal === signal) {
+			return [...this.memo.lines];
+		}
+
+		let body: string[] = [];
+		try {
+			const rendered = this.inner.render(Math.max(1, safe - this.pad));
+			if (Array.isArray(rendered)) body = rendered;
+		} catch {
+			body = [];
+		}
+
+		let lines = body;
+		if (this.limit > 0 && body.length > this.limit) {
+			const hidden = body.length - this.limit;
+			const hint = this.hints
+				? `${fg("muted", " (")}${fg("muted", keyLabel("app.tools.expand", "ctrl+o"))}${fg("muted", " to expand)")}`
+				: "";
+			lines = [...body.slice(0, this.limit), `${fg("muted", `… ${plural(hidden, "more diff line")}`)}${hint}`];
+		}
+
+		const pad = " ".repeat(this.pad);
+		this.memo = { width: safe, signal, lines: lines.map((line) => truncateToWidth(pad + line, safe)) };
+		return [...this.memo.lines];
+	}
 }
