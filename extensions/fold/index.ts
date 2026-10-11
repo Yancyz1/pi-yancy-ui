@@ -1,12 +1,12 @@
 /**
- * pi-fold — Claude Code-style folding of Pi's thinking blocks and tool calls.
+ * pi-yancy-ui — Claude Code-style folding of Pi's thinking blocks and tool calls.
  *
  *   M1  tool rows fold to `● call` + `⎿ summary`, expanded via Pi's own Ctrl+O.
  *   M2  thinking runs fold to `✻ Thinking…` / `✻ Thought for 3.2s`, expanded via
  *       Pi's own Ctrl+T.
  *
  * Load for development:
- *   pi --no-extensions -e ./extensions/fold/index.ts
+ *   pi --no-extensions -e ./extensions/yancyui/index.ts
  */
 
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
@@ -24,9 +24,9 @@ import { installThinkingPatch, describeThinkingDiagnostics, refreshThinkingLabel
 import { installToolFold } from "./tool-fold";
 import { installTurnSummary } from "./turn-summary";
 
-/** `/fold` options that change already-rendered tool rows. */
+/** `/yancyui` options that change already-rendered tool rows. */
 const TOOL_AFFECTING_OPTIONS = new Set(["", "toggle", "on", "off", "tools", "compact", "diff", "summary", "preview", "hints"]);
-/** `/fold` options that change already-rendered thinking rows. */
+/** `/yancyui` options that change already-rendered thinking rows. */
 const THINKING_AFFECTING_OPTIONS = new Set(["", "toggle", "on", "off", "thinking"]);
 
 /**
@@ -46,21 +46,21 @@ function refreshToolRows(ctx: ExtensionCommandContext): void {
 	}
 }
 
-export default function foldExtension(pi: ExtensionAPI): void {
+export default function yancyUiExtension(pi: ExtensionAPI): void {
 	const config: FoldConfig = loadConfig();
 	let restoreThinking = installThinkingPatch(config);
 
-	pi.registerFlag("fold", {
-		description: "Start with transcript folding enabled (overrides fold.json)",
+	pi.registerFlag("yancyui", {
+		description: "Start with transcript folding enabled (overrides yancy-ui.json)",
 		type: "boolean",
 	});
 
 	installToolFold(pi, config);
 	installTurnSummary(pi, config);
 
-	pi.registerCommand("fold", {
+	pi.registerCommand("yancyui", {
 		description:
-			"Fold thinking and tool output: /fold [on|off|tools|compact|diff|thinking|turn|summary|preview|hints|init|status]",
+			"Fold thinking and tool output: /yancyui [on|off|tools|compact|diff|thinking|turn|summary|preview|hints|init|status]",
 		handler: async (args, ctx) => {
 			const option = args.trim().toLowerCase();
 			let message: string;
@@ -114,7 +114,7 @@ export default function foldExtension(pi: ExtensionAPI): void {
 				case "init": {
 					const result = setHideThinkingBlock(true);
 					if (!result.ok) {
-						ctx.ui.notify(`fold: could not write settings: ${result.error ?? "unknown error"}`, "error");
+						ctx.ui.notify(`yancyui: could not write settings: ${result.error ?? "unknown error"}`, "error");
 						return;
 					}
 					bumpGeneration();
@@ -122,11 +122,11 @@ export default function foldExtension(pi: ExtensionAPI): void {
 					refreshToolRows(ctx);
 					refreshThinkingLabels(ctx, config);
 					if (ctx.isIdle()) {
-						ctx.ui.notify(`fold: hideThinkingBlock=true written to ${result.path}. Reloading…`, "info");
+						ctx.ui.notify(`yancyui: hideThinkingBlock=true written to ${result.path}. Reloading…`, "info");
 						await ctx.reload();
 					} else {
 						ctx.ui.notify(
-							`fold: hideThinkingBlock=true written to ${result.path}. Run /reload or restart to apply.`,
+							`yancyui: hideThinkingBlock=true written to ${result.path}. Run /reload or restart to apply.`,
 							"info",
 						);
 					}
@@ -136,7 +136,7 @@ export default function foldExtension(pi: ExtensionAPI): void {
 					message = `${describeConfig(config)} | ${describeThinkingDiagnostics()}`;
 					break;
 				default:
-					ctx.ui.notify(`fold: unknown option "${option}"`, "warning");
+					ctx.ui.notify(`yancyui: unknown option "${option}"`, "warning");
 					return;
 			}
 
@@ -146,13 +146,13 @@ export default function foldExtension(pi: ExtensionAPI): void {
 			// assistant component in the transcript, which is not free.
 			if (TOOL_AFFECTING_OPTIONS.has(option)) refreshToolRows(ctx);
 			if (THINKING_AFFECTING_OPTIONS.has(option)) refreshThinkingLabels(ctx, config);
-			ctx.ui.notify(`fold: ${message}`, "info");
+			ctx.ui.notify(`yancyui: ${message}`, "info");
 		},
 	});
 
 	pi.on("session_start", (_event, ctx) => {
 		try {
-			const flag = pi.getFlag("fold");
+			const flag = pi.getFlag("yancyui");
 			if (typeof flag === "boolean") {
 				config.enabled = flag;
 				bumpGeneration();

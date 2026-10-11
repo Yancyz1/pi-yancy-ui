@@ -46,7 +46,7 @@ interface PatchableAssistant {
 }
 
 /**
- * The live config object, not a snapshot: `/fold thinking` mutates this same object,
+ * The live config object, not a snapshot: `/yancyui thinking` mutates this same object,
  * so reading it here keeps runtime toggles effective without reinstalling the patch.
  */
 let liveConfig: FoldConfig | undefined;

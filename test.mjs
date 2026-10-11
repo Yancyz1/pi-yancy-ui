@@ -52,7 +52,7 @@ function throws(fn, message) {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // --------------------------------------------------------------- fixtures ----
-const agentDir = join(tmpdir(), `pi-fold-test-${process.pid}`);
+const agentDir = join(tmpdir(), `pi-yancy-ui-test-${process.pid}`);
 process.env.PI_CODING_AGENT_DIR = agentDir;
 rmSync(agentDir, { recursive: true, force: true });
 mkdirSync(agentDir, { recursive: true });
@@ -81,7 +81,7 @@ const turnMod = await jiti.import("./extensions/fold/turn-summary.ts", { default
 const thinkingMod = await jiti.import("./extensions/fold/thinking-fold.ts", { default: false });
 const recycleMod = await jiti.import("./extensions/fold/recycle.ts", { default: false });
 const hostMod = await jiti.import("./extensions/fold/host.ts", { default: false });
-const foldExtension = await jiti.import("./extensions/fold/index.ts", { default: true });
+const yancyUiExtension = await jiti.import("./extensions/fold/index.ts", { default: true });
 const piAgent = await jiti.import("@earendil-works/pi-coding-agent", { default: false });
 const tui = await jiti.import("@earendil-works/pi-tui", { default: false });
 const AssistantMessageComponent = piAgent.AssistantMessageComponent;
@@ -262,7 +262,7 @@ test("compact: the call row stands down once a result exists, and shows running 
 
 	// First result render flips the shared state.
 	renderers.renderResult(textResult("hello"), { expanded: false, isPartial: false }, theme, context);
-	assert(context.state[Symbol.for("pi-fold.has-result")], "result render must set the shared state");
+	assert(context.state[Symbol.for("pi-yancy-ui.has-result")], "result render must set the shared state");
 
 	// The call slot goes quiet on the next pass.
 	const quiet = renderers.renderCall({ file_path: "a.md" }, theme, { ...context, expanded: false });
@@ -814,7 +814,7 @@ async function runTurn(setup, { tools = [], stopReason, aborted = false, mode = 
 
 test("turn: an entry renderer is registered", () => {
 	const setup = turnSetup();
-	eq(setup.renderers[0]?.type, "fold-turn");
+	eq(setup.renderers[0]?.type, "yancyui-turn");
 	assert(typeof setup.renderers[0]?.renderer === "function");
 });
 
@@ -831,7 +831,7 @@ test("turn: a settled turn appends exactly one summary", async () => {
 	const setup = turnSetup();
 	await runTurn(setup, { tools: [{ name: "read", durationMs: 1200 }] });
 	eq(setup.entries.length, 1);
-	eq(setup.entries[0].type, "fold-turn");
+	eq(setup.entries[0].type, "yancyui-turn");
 	eq(setup.entries[0].data.tools.length, 1);
 	eq(setup.entries[0].data.outcome, "completed");
 });
@@ -847,7 +847,7 @@ test("turn: an aborted turn is marked as stopped", async () => {
 	const setup = turnSetup();
 	await runTurn(setup, { tools: [{ name: "grep", durationMs: 300 }], aborted: true });
 	eq(setup.entries[0].data.outcome, "aborted");
-	const out = flatten(setup.renderers[0].renderer({ customType: "fold-turn", data: setup.entries[0].data }, { expanded: false }, theme));
+	const out = flatten(setup.renderers[0].renderer({ customType: "yancyui-turn", data: setup.entries[0].data }, { expanded: false }, theme));
 	includes(out, "Stopped after");
 });
 
@@ -855,7 +855,7 @@ test("turn: an errored assistant message is marked as failed", async () => {
 	const setup = turnSetup();
 	await runTurn(setup, { tools: [{ name: "read", durationMs: 10 }], stopReason: "error" });
 	eq(setup.entries[0].data.outcome, "error");
-	const out = flatten(setup.renderers[0].renderer({ customType: "fold-turn", data: setup.entries[0].data }, { expanded: false }, theme));
+	const out = flatten(setup.renderers[0].renderer({ customType: "yancyui-turn", data: setup.entries[0].data }, { expanded: false }, theme));
 	includes(out, "Failed after");
 });
 
@@ -867,7 +867,7 @@ test("turn: failed tools are counted", async () => {
 			{ name: "bash", durationMs: 200, isError: true },
 		],
 	});
-	const out = flatten(setup.renderers[0].renderer({ customType: "fold-turn", data: setup.entries[0].data }, { expanded: false }, theme));
+	const out = flatten(setup.renderers[0].renderer({ customType: "yancyui-turn", data: setup.entries[0].data }, { expanded: false }, theme));
 	includes(out, "2 tools (1 failed)");
 });
 
@@ -932,7 +932,7 @@ test("turn: thinking time reaches the summary label", async () => {
 	await runTurn(setup, { tools: [{ name: "read", durationMs: 10 }] });
 	eq(setup.entries.length, 1);
 	assert(setup.entries[0].data.thinkingMs >= 500, "thinking time should be recorded");
-	const out = flatten(setup.renderers[0].renderer({ customType: "fold-turn", data: setup.entries[0].data }, { expanded: false }, theme));
+	const out = flatten(setup.renderers[0].renderer({ customType: "yancyui-turn", data: setup.entries[0].data }, { expanded: false }, theme));
 	includes(out, "thought");
 });
 
@@ -945,7 +945,7 @@ test("turn: expanded output lists one line per tool", async () => {
 		],
 	});
 	const data = setup.entries[0].data;
-	const out = flatten(setup.renderers[0].renderer({ customType: "fold-turn", data }, { expanded: true }, theme));
+	const out = flatten(setup.renderers[0].renderer({ customType: "yancyui-turn", data }, { expanded: true }, theme));
 	includes(out, "✓ read");
 	includes(out, "1.2s");
 	includes(out, "✗ bash");
@@ -955,20 +955,20 @@ test("turn: expanded output lists one line per tool", async () => {
 test("turn: long durations use minutes", () => {
 	const setup = turnSetup();
 	const data = { durationMs: 150000, thinkingMs: 0, tools: [{ name: "read", durationMs: 10 }], outcome: "completed" };
-	const out = flatten(setup.renderers[0].renderer({ customType: "fold-turn", data }, { expanded: false }, theme));
+	const out = flatten(setup.renderers[0].renderer({ customType: "yancyui-turn", data }, { expanded: false }, theme));
 	includes(out, "Worked for 2m 30s");
 });
 
 test("turn: a single tool is not pluralised", () => {
 	const setup = turnSetup();
 	const data = { durationMs: 1000, thinkingMs: 0, tools: [{ name: "read", durationMs: 10 }], outcome: "completed" };
-	const out = flatten(setup.renderers[0].renderer({ customType: "fold-turn", data }, { expanded: false }, theme));
+	const out = flatten(setup.renderers[0].renderer({ customType: "yancyui-turn", data }, { expanded: false }, theme));
 	includes(out, "1 tool ");
 });
 
 test("turn: a missing payload renders nothing", () => {
 	const setup = turnSetup();
-	eq(setup.renderers[0].renderer({ customType: "fold-turn", data: undefined }, { expanded: false }, theme), undefined);
+	eq(setup.renderers[0].renderer({ customType: "yancyui-turn", data: undefined }, { expanded: false }, theme), undefined);
 });
 
 // ----------------------------------------------------------------- config ----
@@ -1029,7 +1029,7 @@ test("config: broken JSON falls back to defaults", () => {
 
 test("config: the directory follows PI_CODING_AGENT_DIR", () => {
 	eq(configMod.configDir(), agentDir);
-	eq(configMod.configPath(), join(agentDir, "fold.json"));
+	eq(configMod.configPath(), join(agentDir, "yancy-ui.json"));
 });
 
 test("config: describeConfig reports every switch", () => {
@@ -1092,11 +1092,11 @@ function commandCtx(options = {}) {
 test("integration: the factory registers its surface", () => {
 	rmSync(configPath, { force: true });
 	const { pi, registered } = factorySetup();
-	foldExtension(pi);
+	yancyUiExtension(pi);
 	eq(registered.toolRenderers.length, 1);
-	eq(registered.commands.filter((c) => c.name === "fold").length, 1);
-	eq(registered.flags.filter((f) => f.name === "fold").length, 1);
-	eq(registered.entryRenderers.filter((e) => e.type === "fold-turn").length, 1);
+	eq(registered.commands.filter((c) => c.name === "yancyui").length, 1);
+	eq(registered.flags.filter((f) => f.name === "yancyui").length, 1);
+	eq(registered.entryRenderers.filter((e) => e.type === "yancyui-turn").length, 1);
 	const events = new Set(registered.events.map((e) => e.event));
 	for (const event of ["before_agent_start", "tool_execution_start", "tool_execution_end", "agent_end", "agent_settled", "session_start", "session_shutdown"]) {
 		assert(events.has(event), `missing event ${event}`);
@@ -1104,25 +1104,25 @@ test("integration: the factory registers its surface", () => {
 	eq(registered.events.filter((e) => e.event === "agent_settled").length, 1, "the summary must settle once");
 });
 
-test("integration: /fold status reports the live config", async () => {
+test("integration: /yancyui status reports the live config", async () => {
 	rmSync(configPath, { force: true });
 	const { pi, registered } = factorySetup();
-	foldExtension(pi);
-	const command = registered.commands.find((c) => c.name === "fold");
+	yancyUiExtension(pi);
+	const command = registered.commands.find((c) => c.name === "yancyui");
 	const { ctx, calls } = commandCtx();
 	await command.opts.handler("status", ctx);
 	includes(calls.notify.at(-1).message, "enabled=");
 	includes(calls.notify.at(-1).message, "patch=");
 });
 
-test("integration: /fold toggle flips and persists", async () => {
+test("integration: /yancyui toggle flips and persists", async () => {
 	rmSync(configPath, { force: true });
 	const { pi, registered } = factorySetup();
-	foldExtension(pi);
-	const command = registered.commands.find((c) => c.name === "fold");
+	yancyUiExtension(pi);
+	const command = registered.commands.find((c) => c.name === "yancyui");
 	const { ctx, calls } = commandCtx();
 	await command.opts.handler("", ctx);
-	eq(calls.notify.at(-1).message, "fold: folding off");
+	eq(calls.notify.at(-1).message, "yancyui: folding off");
 	eq(configMod.loadConfig().enabled, false);
 	await command.opts.handler("on", ctx);
 	eq(configMod.loadConfig().enabled, true);
@@ -1131,8 +1131,8 @@ test("integration: /fold toggle flips and persists", async () => {
 test("integration: an unknown option warns and saves nothing", async () => {
 	rmSync(configPath, { force: true });
 	const { pi, registered } = factorySetup();
-	foldExtension(pi);
-	const command = registered.commands.find((c) => c.name === "fold");
+	yancyUiExtension(pi);
+	const command = registered.commands.find((c) => c.name === "yancyui");
 	const { ctx, calls } = commandCtx();
 	await command.opts.handler("bogus", ctx);
 	eq(calls.notify.at(-1).tone, "warning");
@@ -1142,8 +1142,8 @@ test("integration: an unknown option warns and saves nothing", async () => {
 test("integration: tool options refresh tool rows, others do not", async () => {
 	rmSync(configPath, { force: true });
 	const { pi, registered } = factorySetup();
-	foldExtension(pi);
-	const command = registered.commands.find((c) => c.name === "fold");
+	yancyUiExtension(pi);
+	const command = registered.commands.find((c) => c.name === "yancyui");
 
 	const toolRun = commandCtx();
 	await command.opts.handler("tools", toolRun.ctx);
@@ -1158,31 +1158,31 @@ test("integration: tool options refresh tool rows, others do not", async () => {
 test("integration: thinking options refresh thinking labels", async () => {
 	rmSync(configPath, { force: true });
 	const { pi, registered } = factorySetup();
-	foldExtension(pi);
-	const command = registered.commands.find((c) => c.name === "fold");
+	yancyUiExtension(pi);
+	const command = registered.commands.find((c) => c.name === "yancyui");
 	const { ctx, calls } = commandCtx();
 	await command.opts.handler("thinking", ctx);
 	eq(calls.setHiddenThinkingLabel.length, 1);
 	eq(calls.setHiddenThinkingLabel[0], undefined, "thinking is now off, so the native label returns");
 });
 
-test("integration: /fold init writes settings and reloads when idle", async () => {
+test("integration: /yancyui init writes settings and reloads when idle", async () => {
 	rmSync(configPath, { force: true });
 	rmSync(join(agentDir, "settings.json"), { force: true });
 	const { pi, registered } = factorySetup();
-	foldExtension(pi);
-	const command = registered.commands.find((c) => c.name === "fold");
+	yancyUiExtension(pi);
+	const command = registered.commands.find((c) => c.name === "yancyui");
 	const { ctx, calls } = commandCtx({ idle: true });
 	await command.opts.handler("init", ctx);
 	eq(JSON.parse(readFileSync(join(agentDir, "settings.json"), "utf-8")).hideThinkingBlock, true);
 	eq(calls.reload, 1);
 });
 
-test("integration: /fold init defers the reload while busy", async () => {
+test("integration: /yancyui init defers the reload while busy", async () => {
 	rmSync(join(agentDir, "settings.json"), { force: true });
 	const { pi, registered } = factorySetup();
-	foldExtension(pi);
-	const command = registered.commands.find((c) => c.name === "fold");
+	yancyUiExtension(pi);
+	const command = registered.commands.find((c) => c.name === "yancyui");
 	const { ctx, calls } = commandCtx({ idle: false });
 	await command.opts.handler("init", ctx);
 	eq(calls.reload, 0);
@@ -1192,8 +1192,8 @@ test("integration: /fold init defers the reload while busy", async () => {
 test("integration: a non-TUI command never touches the UI", async () => {
 	rmSync(configPath, { force: true });
 	const { pi, registered } = factorySetup();
-	foldExtension(pi);
-	const command = registered.commands.find((c) => c.name === "fold");
+	yancyUiExtension(pi);
+	const command = registered.commands.find((c) => c.name === "yancyui");
 	const { ctx, calls } = commandCtx({ mode: "print" });
 	await command.opts.handler("tools", ctx);
 	eq(calls.setToolsExpanded.length, 0);
@@ -1203,7 +1203,7 @@ test("integration: a non-TUI command never touches the UI", async () => {
 test("integration: session_start honours the --fold flag", () => {
 	rmSync(configPath, { force: true });
 	const { pi, registered, setFlag } = factorySetup();
-	foldExtension(pi);
+	yancyUiExtension(pi);
 	setFlag(false);
 	const { ctx, calls } = commandCtx();
 	for (const handler of registered.events.filter((e) => e.event === "session_start")) handler.handler({}, ctx);
@@ -1213,7 +1213,7 @@ test("integration: session_start honours the --fold flag", () => {
 test("integration: session_start collapses tool rows when folding is on", () => {
 	rmSync(configPath, { force: true });
 	const { pi, registered } = factorySetup();
-	foldExtension(pi);
+	yancyUiExtension(pi);
 	const { ctx, calls } = commandCtx();
 	for (const handler of registered.events.filter((e) => e.event === "session_start")) handler.handler({}, ctx);
 	eq(calls.setToolsExpanded.at(-1), false);
@@ -1222,7 +1222,7 @@ test("integration: session_start collapses tool rows when folding is on", () => 
 test("integration: session_shutdown restores the thinking patch", () => {
 	rmSync(configPath, { force: true });
 	const { pi, registered } = factorySetup();
-	foldExtension(pi);
+	yancyUiExtension(pi);
 	for (const handler of registered.events.filter((e) => e.event === "session_start")) handler.handler({}, commandCtx().ctx);
 	assert(thinkingMod.thinkingDiagnostics().installed, "patch should be installed after start");
 	for (const handler of registered.events.filter((e) => e.event === "session_shutdown")) handler.handler({}, {});

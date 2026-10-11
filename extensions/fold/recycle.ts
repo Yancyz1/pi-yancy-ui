@@ -19,7 +19,7 @@ import { Text, type Component } from "@earendil-works/pi-tui";
 
 import { safeWidth, truncateToWidth, visibleWidth } from "./palette";
 
-const INNER = Symbol.for("pi-fold.inner");
+const INNER = Symbol.for("pi-yancy-ui.inner");
 
 export function isComponent(value: unknown): value is Component {
 	if (!value || typeof value !== "object") return false;

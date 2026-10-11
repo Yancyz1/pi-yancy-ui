@@ -13,7 +13,7 @@
  *   - `restore()` puts the exact original property descriptor back.
  */
 
-const REGISTRY = Symbol.for("pi-fold.prototype-patches");
+const REGISTRY = Symbol.for("pi-yancy-ui.prototype-patches");
 
 type AnyFunction = (...args: unknown[]) => unknown;
 
@@ -68,7 +68,7 @@ export function installMethodPatch(
 		}
 	}
 
-	const token = Symbol("pi-fold.patch");
+	const token = Symbol("pi-yancy-ui.patch");
 	const wrapper = function (this: unknown, ...args: unknown[]): unknown {
 		const current = registry.get(method);
 		if (current?.token !== token) {

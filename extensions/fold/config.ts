@@ -1,5 +1,5 @@
 /**
- * fold.json configuration.
+ * yancy-ui.json configuration.
  *
  * Kept deliberately small. Every value is a boolean so a malformed file can only
  * fall back to the default, never produce an invalid state.
@@ -72,7 +72,7 @@ export function configDir(): string {
 }
 
 export function configPath(): string {
-	return join(configDir(), "fold.json");
+	return join(configDir(), "yancy-ui.json");
 }
 
 export function loadConfig(): FoldConfig {

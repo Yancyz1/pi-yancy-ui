@@ -154,7 +154,7 @@ const COMPACT_ICON = "●";
 const COMPACT_DIGEST_WIDTH = 48;
 
 /** Set by {@link compactResultRow} once a result line has been rendered for this row. */
-const HAS_RESULT = Symbol.for("pi-fold.has-result");
+const HAS_RESULT = Symbol.for("pi-yancy-ui.has-result");
 
 type CompactState = Record<PropertyKey, unknown> | undefined;
 

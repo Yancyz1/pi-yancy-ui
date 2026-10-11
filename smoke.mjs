@@ -7,7 +7,7 @@ import { Text } from "@earendil-works/pi-tui";
 
 // Keep the smoke test from touching the real agent config dir. Pi's own override
 // is PI_CODING_AGENT_DIR (read by getAgentDir()).
-process.env.PI_CODING_AGENT_DIR = join(tmpdir(), "pi-fold-smoke");
+process.env.PI_CODING_AGENT_DIR = join(tmpdir(), "pi-yancy-ui-smoke");
 
 // Pi initializes the theme when the TUI starts. AssistantMessageComponent reads it
 // through a globalThis proxy, so install an identity theme for this headless test.
@@ -28,7 +28,7 @@ globalThis[Symbol.for("@earendil-works/pi-coding-agent:theme")] = identityTheme;
 globalThis[Symbol.for("@mariozechner/pi-coding-agent:theme")] = identityTheme;
 
 const jiti = createJiti(import.meta.url);
-const factory = await jiti.import("./extensions/fold/index.ts", { default: true });
+const factory = await jiti.import("./extensions/yancy-ui/index.ts", { default: true });
 
 const reg = { toolRenderers: [], commands: [], flags: [], events: [], entryRenderers: [], entries: [] };
 const pi = {
@@ -190,7 +190,7 @@ console.log("\n--- thinking (restored) ---");
 console.log(restored.render(60).join("\n"));
 
 // Runtime toggle: mutating the live config must change the rendered label.
-const { installThinkingPatch } = await jiti.import("./extensions/fold/thinking-fold.ts");
+const { installThinkingPatch } = await jiti.import("./extensions/yancy-ui/thinking-fold.ts");
 const liveConfig = { enabled: true, tools: true, thinking: true, preview: true, previewLines: 5, summary: true, turnSummary: true, hints: true };
 const restoreToggle = installThinkingPatch(liveConfig);
 const toggle = new AssistantMessageComponent(baseMessage, true, undefined, "Thinking...", 1, []);
@@ -207,13 +207,13 @@ console.log("--- toggle thinking=true again ---");
 console.log(toggle.render(60).join("\n").replace(/\x1b\][^\x07]*\x07/g, ""));
 restoreToggle();
 
-// /fold status wires config + diagnostics together.
-const folderCommand = reg.commands.find((entry) => entry.name === "fold");
-await folderCommand.opts.handler("status", {
+// /yancyui status wires config + diagnostics together.
+const yancyuiCommand = reg.commands.find((entry) => entry.name === "yancyui");
+await yancyuiCommand.opts.handler("status", {
 	mode: "tui",
 	isIdle: () => true,
 	ui: {
-		notify: (message) => console.log("\n/fold status ->", message),
+		notify: (message) => console.log("\n/yancyui status ->", message),
 		getToolsExpanded: () => false,
 		setToolsExpanded: () => {},
 		setHiddenThinkingLabel: () => {},
@@ -267,10 +267,10 @@ await runEvent("agent_end", {
 await runEvent("agent_settled", { type: "agent_settled", aborted: true });
 
 console.log("\nappended entries:", JSON.stringify(reg.entries));
-const turnRenderer = reg.entryRenderers.find((entry) => entry.type === "fold-turn")?.renderer;
+const turnRenderer = reg.entryRenderers.find((entry) => entry.type === "yancyui-turn")?.renderer;
 if (turnRenderer && reg.entries[0]) {
 	for (const [index, appended] of reg.entries.entries()) {
-		const entry = { customType: "fold-turn", data: appended.data };
+		const entry = { customType: "yancyui-turn", data: appended.data };
 		console.log(`--- turn summary #${index} (collapsed) ---`);
 		console.log(turnRenderer(entry, { expanded: false }, identityTheme).render(60).join("\n"));
 		console.log(`--- turn summary #${index} (expanded) ---`);

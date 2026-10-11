@@ -18,7 +18,7 @@ import type { FoldConfig } from "./config";
 import { fg } from "./palette";
 import { consumeThinkingMs } from "./thinking-fold";
 
-const ENTRY_TYPE = "fold-turn";
+const ENTRY_TYPE = "yancyui-turn";
 
 interface ToolRecord {
 	name: string;
