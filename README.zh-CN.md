@@ -1,4 +1,4 @@
-# pi-fold
+# pi-yancy-ui
 
 [English](README.md) · **中文**
 
@@ -160,7 +160,7 @@ pi --no-extensions -e /path/to/pi-ext/extensions/fold/index.ts
 ● read  src/injector.ts
 ```
 
-`●` 是 pi-fold 的标记，颜色反映工具状态：执行中是 accent 色，失败是错误红，其余是弱化色。
+`●` 是 pi-yancy-ui 的标记，颜色反映工具状态：执行中是 accent 色，失败是错误红，其余是弱化色。
 这一行剩下的部分是 Pi 自己的调用渲染器，原样保留。
 
 ### 折叠后的结果行（经典模式）
@@ -248,7 +248,7 @@ pi --no-extensions -e /path/to/pi-ext/extensions/fold/index.ts
 
 ## 按键
 
-pi-fold 不新增任何按键，只复用 Pi 的：
+pi-yancy-ui 不新增任何按键，只复用 Pi 的：
 
 | 按键 | 作用 | Pi 的动作名 |
 |---|---|---|

@@ -1,11 +1,11 @@
 # AGENTS.md
 
-**pi-fold** 的项目记忆 —— 一个把 Pi 的 TUI 转录区渲染成 Claude Code 风格的扩展。
+**pi-yancy-ui** 的项目记忆 —— 一个把 Pi 的 TUI 转录区渲染成 Claude Code 风格的扩展。
 本文件是本仓库的工作准则；保持简短，细节写进 `docs/ARCHITECTURE.md` 并链接，不要重复。
 
 ## 项目是什么
 
-一个 Pi 扩展（包名 `pi-fold`），通过 `package.json` → `pi.extensions` →
+一个 Pi 扩展（包名 `pi-yancy-ui`），通过 `package.json` → `pi.extensions` →
 `extensions/fold/index.ts` 注册。它**只改渲染**：
 
 - **M1 工具折叠** —— 工具调用 + 结果收成 `● 调用` / `⎿ 汇总`（外加几行预览），
@@ -67,7 +67,7 @@ extensions/fold/
    任何内容都不能被永久隐藏。
 3. **绝不把 wrapper 当 `lastComponent` 返回。** 内置渲染器会回收它自己持有的组件
    （`context.lastComponent ?? new Text(...)` 然后就地 mutate）。必须把手回存在
-   `Symbol.for("pi-fold.inner")` 下的内置组件（`recycle.ts` 的 `innerOf` /
+   `Symbol.for("pi-yancy-ui.inner")` 下的内置组件（`recycle.ts` 的 `innerOf` /
    `callBaseRenderer`）。搞错这一点会让行在两种布局间逐帧闪烁。
 4. **先切片再高亮。** 预览最多 `previewLines` 行：先切分行、切片，**然后**对切片跑
    `highlightCode`。绝不高亮整个文件。
@@ -77,7 +77,7 @@ extensions/fold/
    不要在别处 import 这类 API。新访问器要有 `verify-host.mjs` 覆盖。
 7. **配置按引用实时读取。** `/fold` 修改的是同一个 `FoldConfig` 对象；渲染器必须在渲染
    时读取（并把 `configGeneration()` 纳入 memo key），绝不能在建补丁时快照。
-8. **原型补丁必须走 `patch.ts`。** 它以 `Symbol.for("pi-fold.prototype-patches")` 在
+8. **原型补丁必须走 `patch.ts`。** 它以 `Symbol.for("pi-yancy-ui.prototype-patches")` 在
    目标上注册，reload 时复用真正的 predecessor，被顶替时转发，`restore()` 还原原始
    descriptor。`session_shutdown` 还原，`session_start` 重装。
 9. **轮次边界用 `agent_settled`，不用 `agent_end`**（自动重试/续写会导致过早写入错误的

@@ -1,4 +1,4 @@
-# pi-fold
+# pi-yancy-ui
 
 **English** · [中文](README.zh-CN.md)
 
@@ -172,7 +172,7 @@ extension — see [Troubleshooting](#troubleshooting).
 ● read  src/injector.ts
 ```
 
-`●` is the pi-fold marker. Its colour tracks the tool state: accent while the tool is
+`●` is the pi-yancy-ui marker. Its colour tracks the tool state: accent while the tool is
 running, error red when it failed, muted otherwise. The rest of the line is Pi's own
 call renderer, unchanged.
 
@@ -266,7 +266,7 @@ summary. The entry is session data, not context: **it is never sent to the model
 
 ## Keys
 
-pi-fold adds no keybindings. It reuses Pi's:
+pi-yancy-ui adds no keybindings. It reuses Pi's:
 
 | Key | Action | Pi action name |
 |---|---|---|

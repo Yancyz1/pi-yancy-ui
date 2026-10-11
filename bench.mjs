@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Text } from "@earendil-works/pi-tui";
 
-process.env.PI_CODING_AGENT_DIR = join(tmpdir(), "pi-fold-bench");
+process.env.PI_CODING_AGENT_DIR = join(tmpdir(), "pi-yancy-ui-bench");
 
 globalThis[Symbol.for("@earendil-works/pi-coding-agent:theme")] = new Proxy(
 	{},
@@ -21,7 +21,7 @@ globalThis[Symbol.for("@earendil-works/pi-coding-agent:theme")] = new Proxy(
 );
 
 const jiti = createJiti(import.meta.url);
-const factory = await jiti.import("./extensions/fold/index.ts", { default: true });
+const factory = await jiti.import("./extensions/yancy-ui/index.ts", { default: true });
 const reg = { toolRenderers: [] };
 factory({
 	registerToolRenderer: (r) => reg.toolRenderers.push(r),
@@ -58,7 +58,7 @@ function bench(label, fn, iterations) {
 	console.log(`${label.padEnd(46)} ${(ms / iterations).toFixed(4)} ms/call`);
 }
 
-console.log("--- read result render (collapsed pi-fold vs native passthrough) ---");
+console.log("--- read result render (collapsed pi-yancy-ui vs native passthrough) ---");
 for (const [lines, text] of Object.entries(files)) {
 	const result = { content: [{ type: "text", text }], details: {} };
 	const collapsed = resolver("read", () => fakeBase);

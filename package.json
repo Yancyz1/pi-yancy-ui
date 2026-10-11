@@ -1,5 +1,5 @@
 {
-	"name": "pi-fold",
+	"name": "pi-yancy-ui",
 	"version": "0.1.0",
 	"description": "Claude Code-style folding of Pi's thinking blocks and tool calls.",
 	"type": "module",
@@ -17,11 +17,11 @@
 	],
 	"pi": {
 		"extensions": [
-			"extensions/fold/index.ts"
+			"extensions/yancy-ui/index.ts"
 		]
 	},
 	"scripts": {
-		"dev": "pi --no-extensions -e ./extensions/fold/index.ts",
+		"dev": "pi --no-extensions -e ./extensions/yancy-ui/index.ts",
 		"smoke": "node smoke.mjs",
 		"test": "node test.mjs",
 		"bench": "node bench.mjs",

@@ -1,6 +1,6 @@
 # Architecture
 
-How pi-fold draws folded rows, why it patches one prototype method, and how it stays
+How pi-yancy-ui draws folded rows, why it patches one prototype method, and how it stays
 alive across Pi releases. For user-facing behaviour see [../README.md](../README.md).
 
 ## Layout
@@ -70,7 +70,7 @@ green success, red failure), the title carries a short argument digest
   (`wrote N lines`) covers well enough.
 - Before the first result arrives (`isPartial` is `true` from construction), the call
   slot shows `● tool args · running…`. `compactResultRow` flips a shared-state flag
-  (`Symbol.for("pi-fold.has-result")` on `context.state`, which Pi shares between the
+  (`Symbol.for("pi-yancy-ui.has-result")` on `context.state`, which Pi shares between the
   call and result slots of one tool row) and defers a `context.invalidate()` via
   `queueMicrotask` — invalidating synchronously would re-enter `updateDisplay` while
   Pi is mid-rebuild. One extra pass per tool stands the call row down.
@@ -86,7 +86,7 @@ Two details matter:
    and then mutate it. If we handed back our wrapper, the next refresh would call
    `setText`/`clear` on the wrapper and throw, making rows flip between layouts. So
    every wrapper stores the built-in component under
-   `Symbol.for("pi-fold.inner")`, and the next call passes that component back as
+   `Symbol.for("pi-yancy-ui.inner")`, and the next call passes that component back as
    `lastComponent`. `callBaseRenderer` also retries once without a `lastComponent` if
    a stale or foreign component is supplied, so a row can never be lost. Expanded call
    rows additionally swap the `●` marker for a `▾` triangle in the same status colours
@@ -123,7 +123,7 @@ later turn.
 `patch.ts` makes this safe:
 
 - The patch registry lives on the prototype under
-  `Symbol.for("pi-fold.prototype-patches")`, keyed by method, so a reloaded extension
+  `Symbol.for("pi-yancy-ui.prototype-patches")`, keyed by method, so a reloaded extension
   reuses the true predecessor instead of stacking wrappers.
 - A wrapper that is no longer current forwards to the predecessor, so it cannot fold
   twice.
@@ -174,7 +174,7 @@ context fields (`outputPad`, `durationMs`, `isError`, `executionStarted`, `state
 Collapsed rendering is constant-ish in output size, because the preview is sliced
 before highlighting. Measured with `npm run bench`:
 
-| Case | pi-fold collapsed | Pi native (expanded) |
+| Case | pi-yancy-ui collapsed | Pi native (expanded) |
 |---|---|---|
 | read, 50 lines | 0.10 ms | 0.04 ms |
 | read, 500 lines | 0.10 ms | 0.24 ms |
@@ -187,7 +187,7 @@ once per consumer), and `isPartial` short-circuits to a `running…` header befo
 text processing, which matters while a shell streams.
 
 The only case where collapsed costs more than native is a small `read`, because
-native returns an empty string when collapsed while pi-fold renders a preview — at
+native returns an empty string when collapsed while pi-yancy-ui renders a preview — at
 0.14 ms for 2,000 lines.
 
 ## Testing
@@ -214,6 +214,6 @@ is covered by `verify:host` instead.
   would require reparenting Pi's chat container. The turn summary is the low-risk
   compromise.
 - **Preview only, no custom expanded view.** Expanded rows hand off to the built-in
-  renderer verbatim, so pi-fold never diverges from Pi's own output when open.
+  renderer verbatim, so pi-yancy-ui never diverges from Pi's own output when open.
 - **No package-name resolver for forks.** A Pi distribution published under a
   different package name needs a resolution shim.
