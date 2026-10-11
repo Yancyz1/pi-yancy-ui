@@ -1,0 +1,428 @@
+/**
+ * M1 — tool folding, Claude Code style.
+ *
+ *   collapsed  ->  ⏺ <native call row>
+ *                  ⎿ <summary>
+ *                    <first N lines of the result>
+ *                    … N more lines (ctrl+o to expand)
+ *   expanded   ->  ⏺ <native call row>
+ *                  <native result row, unchanged>
+ *
+ * Tool execution is untouched; only rendering is replaced, and the built-in
+ * result renderer is reused verbatim when expanded.
+ *
+ * Previews are sliced before rendering and highlighted per slice, so a 3,000 line
+ * `read` costs five highlighted lines, not a full-file highlight.
+ */
+
+import type { ExtensionAPI, ToolRenderers } from "@earendil-works/pi-coding-agent";
+import { Text } from "@earendil-works/pi-tui";
+
+import { configGeneration, type FoldConfig } from "./config";
+import { hostHighlight, hostLanguageForPath } from "./host";
+import { bold, fg, keyLabel } from "./palette";
+import { Row, callBaseRenderer, emptyComponent, innerOf } from "./recycle";
+
+type CallRenderer = NonNullable<ToolRenderers["renderCall"]>;
+type ResultRenderer = NonNullable<ToolRenderers["renderResult"]>;
+type CallContext = Parameters<CallRenderer>[2];
+type ResultContext = Parameters<ResultRenderer>[3];
+type ResultOptions = Parameters<ResultRenderer>[1];
+type Theme = Parameters<CallRenderer>[1];
+type RenderResult = Parameters<ResultRenderer>[0];
+
+export function installToolFold(pi: ExtensionAPI, config: FoldConfig): void {
+	try {
+		pi.registerToolRenderer((toolName, next) => {
+			let base: ToolRenderers | undefined;
+			try {
+				base = next();
+			} catch {
+				return undefined;
+			}
+			if (!base) return undefined;
+
+			const baseRenderCall = base.renderCall;
+			const baseRenderResult = base.renderResult;
+			if (!baseRenderCall && !baseRenderResult) return undefined;
+
+			// `renderShell` is resolved when the tool component is constructed, so flat rows
+			// are the only mode: there is no per-row shell toggle.
+			const baseShell: "default" | "self" = base.renderShell === "self" ? "self" : "default";
+			const renderers: ToolRenderers = { renderShell: "self" };
+
+			/**
+			 * The built-in rows relied on Pi's `Box` for horizontal padding. Rows that always
+			 * rendered themselves (`edit`) already pad.
+			 */
+			const padFor = (context: unknown): number => {
+				if (baseShell === "self") return 0;
+				const pad = (context as { outputPad?: unknown } | undefined)?.outputPad;
+				return typeof pad === "number" && Number.isFinite(pad) && pad > 0 ? Math.floor(pad) : 0;
+			};
+
+			const prefixFor = (context: CallContext | undefined): string => fg(callTone(context), "⏺ ");
+
+			renderers.renderCall = (args: unknown, theme: Theme, context: CallContext) => {
+				const inner = innerOf(context?.lastComponent);
+				const child = callBaseRenderer(baseRenderCall, [args, theme], context, inner);
+				return new Row(child ?? callFallback(toolName, args), {
+					pad: padFor(context),
+					prefix: prefixFor(context),
+					signal: configGeneration,
+				});
+			};
+
+			renderers.renderResult = (
+				result: RenderResult,
+				options: ResultOptions,
+				theme: Theme,
+				context: ResultContext,
+			) => {
+				const folding = config.enabled && config.tools;
+
+				// Expanded, or folding disabled: hand off to the built-in renderer untouched.
+				if (!folding || options.expanded) {
+					const inner = innerOf(context?.lastComponent);
+					const child = callBaseRenderer(baseRenderResult, [result, options, theme], context, inner);
+					return new Row(child ?? emptyComponent(), {
+						pad: padFor(context),
+						signal: configGeneration,
+					});
+				}
+
+				if (!config.summary && !config.preview) {
+					return emptyComponent();
+				}
+
+				const body = buildCollapsed(toolName, result, options, context, config);
+				return body.length > 0 ? new Text(body.join("\n"), padFor(context) + 2, 0) : emptyComponent();
+			};
+
+			return renderers;
+		});
+	} catch {
+		// Tool folding is optional; a failure here must not break the extension.
+	}
+}
+
+function callTone(context: CallContext | undefined): string {
+	if (context?.isError) return "error";
+	if (context?.executionStarted) return "accent";
+	return "muted";
+}
+
+function callFallback(toolName: string, args: unknown): Text {
+	let detail = "";
+	if (args && typeof args === "object") {
+		for (const value of Object.values(args as Record<string, unknown>)) {
+			if (typeof value === "string" && value.trim().length > 0) {
+				detail = value.trim().split("\n")[0] ?? "";
+				break;
+			}
+		}
+	}
+	const title = bold(fg("toolTitle", toolName));
+	return new Text(detail ? `${title} ${fg("accent", detail)}` : title, 0, 0);
+}
+
+function contentText(result: RenderResult): string {
+	const content = Array.isArray(result?.content) ? result.content : [];
+	const parts: string[] = [];
+	for (const block of content) {
+		if (block && block.type === "text" && typeof (block as { text?: unknown }).text === "string") {
+			parts.push((block as { text: string }).text);
+		}
+	}
+	return parts.length === 1 ? (parts[0] ?? "") : parts.join("\n");
+}
+
+function contentHasImage(result: RenderResult): boolean {
+	const content = Array.isArray(result?.content) ? result.content : [];
+	return content.some((block) => !!block && block.type === "image");
+}
+
+function splitLines(text: string): string[] {
+	const trimmed = text.replace(/\n+$/, "");
+	return trimmed.length === 0 ? [] : trimmed.split("\n");
+}
+
+/** Line count without allocating the split array; a single trailing newline is ignored. */
+function countLines(text: string): number {
+	if (text.length === 0) return 0;
+	let count = 1;
+	for (let index = 0; index < text.length; index++) {
+		if (text.charCodeAt(index) === 10) count++;
+	}
+	if (text.charCodeAt(text.length - 1) === 10) count--;
+	return Math.max(0, count);
+}
+
+function firstOf(lines: string[]): string {
+	const line = lines.find((entry) => entry.trim().length > 0);
+	return line ? line.trim() : "";
+}
+
+function countDiff(diff: string): { added: number; removed: number } {
+	let added = 0;
+	let removed = 0;
+	for (const line of diff.split("\n")) {
+		if (line.startsWith("+") && !line.startsWith("+++")) added++;
+		else if (line.startsWith("-") && !line.startsWith("---")) removed++;
+	}
+	return { added, removed };
+}
+
+function formatDuration(ms: number): string {
+	if (!Number.isFinite(ms) || ms < 0) return "";
+	return ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(1)}s`;
+}
+
+function plural(count: number, one: string, many?: string): string {
+	return `${count} ${count === 1 ? one : (many ?? `${one}s`)}`;
+}
+
+interface TruncationLike {
+	totalLines?: unknown;
+	truncated?: unknown;
+}
+
+/** Pi reports "nothing found" as the result text, not as an empty list. */
+function isNoMatches(text: string): boolean {
+	return /^no matches found$/i.test(text.trim());
+}
+
+function isNoFiles(text: string): boolean {
+	return /^no files found/i.test(text.trim());
+}
+
+function isEmptyDirectory(text: string): boolean {
+	return text.trim() === "(empty directory)";
+}
+
+function isStatusText(toolName: string, text: string): boolean {
+	if (toolName === "grep") return isNoMatches(text);
+	if (toolName === "find") return isNoFiles(text);
+	if (toolName === "ls") return isEmptyDirectory(text);
+	return false;
+}
+
+/** Pi appends a status line to shell failures; it is not payload. */
+const SHELL_STATUS = /\n*Command (?:exited with code \d+|timed out after .*|aborted|terminated without an exit code)\.?\s*$/i;
+
+function isShellTool(toolName: string): boolean {
+	return toolName === "bash" || toolName === "powershell";
+}
+
+function shellOutput(text: string): string {
+	return text.replace(SHELL_STATUS, "").replace(/\n+$/, "");
+}
+
+/** The styled `⎿ …` header parts for a collapsed row. */
+function summarizeParts(
+	toolName: string,
+	result: RenderResult,
+	context: ResultContext,
+	text: string,
+	lines: string[],
+): string[] {
+	const muted = (value: string) => fg("muted", value);
+	const ok = (value: string) => fg("success", value);
+	const bad = (value: string) => fg("error", value);
+	const parts: string[] = [];
+
+	if (isShellTool(toolName)) {
+		// Pi writes "Command exited with code N" and only for failures, so the exit
+		// code must be read from the original text, not the stripped payload.
+		const match = text.match(/exited with code\s+(\d+)/i) ?? text.match(/exit code:?\s*(\d+)/i);
+		if (match) {
+			const code = Number(match[1]);
+			parts.push(code === 0 ? ok("exit 0") : bad(`exit ${code}`));
+		} else {
+			parts.push(context.isError ? bad("failed") : ok("exit 0"));
+		}
+		if (lines.length > 0) parts.push(plural(lines.length, "line"));
+	} else if (context.isError) {
+		parts.push(bad(firstOf(lines) || "failed"));
+	} else {
+		switch (toolName) {
+			case "read": {
+				if (contentHasImage(result)) {
+					parts.push("image");
+					break;
+				}
+				const truncation = (result?.details as { truncation?: TruncationLike } | undefined)?.truncation;
+				const total =
+					typeof truncation?.totalLines === "number" && Number.isFinite(truncation.totalLines)
+						? Math.max(0, Math.floor(truncation.totalLines))
+						: lines.length;
+				parts.push(plural(total, "line"));
+				if (truncation?.truncated === true) parts.push(muted("truncated"));
+				break;
+			}
+			case "write": {
+				// The result text is "Successfully wrote to <path>"; the payload is the input.
+				const args = context?.args as { content?: unknown } | undefined;
+				const content = typeof args?.content === "string" ? args.content : "";
+				parts.push(`wrote ${plural(countLines(content), "line")}`);
+				break;
+			}
+			case "edit": {
+				const diff = (result?.details as { diff?: unknown } | undefined)?.diff;
+				if (typeof diff === "string" && diff.length > 0) {
+					const { added, removed } = countDiff(diff);
+					parts.push(ok(`+${added}`));
+					parts.push(bad(`-${removed}`));
+				} else {
+					parts.push("applied");
+				}
+				break;
+			}
+			case "grep":
+				parts.push(isNoMatches(text) ? "no matches" : plural(lines.length, "match", "matches"));
+				break;
+			case "find":
+				parts.push(isNoFiles(text) ? "no files" : plural(lines.length, "file"));
+				break;
+			case "ls":
+				parts.push(isEmptyDirectory(text) ? "empty" : plural(lines.length, "entry", "entries"));
+				break;
+			default:
+				parts.push(firstOf(lines) || "done");
+				break;
+		}
+	}
+
+	if (typeof context.durationMs === "number" && context.durationMs >= 1000) {
+		parts.push(muted(formatDuration(context.durationMs)));
+	}
+	return parts;
+}
+
+interface PreviewSource {
+	lines: string[];
+	/** `bash` shows the tail; everything else shows the head. */
+	tail: boolean;
+	highlightLanguage?: string;
+	/** 1-indexed first line number, for a `read` gutter. */
+	startLine?: number;
+}
+
+function readPath(context: ResultContext): string | undefined {
+	const args = context?.args as { file_path?: unknown; path?: unknown } | undefined;
+	const value = args?.file_path ?? args?.path;
+	return typeof value === "string" ? value : undefined;
+}
+
+/**
+ * Tools whose call row already previews the interesting payload (`write` shows the
+ * content, `edit` shows the diff) do not repeat it in the result.
+ */
+function previewSource(
+	toolName: string,
+	result: RenderResult,
+	context: ResultContext,
+	text: string,
+	lines: string[],
+): PreviewSource | undefined {
+	if (toolName === "write" || toolName === "edit") return undefined;
+	if (toolName === "read" && contentHasImage(result)) return undefined;
+	if (isStatusText(toolName, text)) return undefined;
+	if (lines.length === 0) return undefined;
+
+	if (toolName === "bash" || toolName === "powershell") {
+		return { lines, tail: true };
+	}
+	if (toolName === "read") {
+		const args = context?.args as { offset?: unknown } | undefined;
+		const offset =
+			typeof args?.offset === "number" && Number.isFinite(args.offset) && args.offset > 0
+				? Math.floor(args.offset)
+				: 1;
+		return {
+			lines,
+			tail: false,
+			highlightLanguage: hostLanguageForPath(readPath(context) ?? ""),
+			startLine: offset,
+		};
+	}
+	return { lines, tail: false };
+}
+
+function highlight(lines: string[], language: string | undefined): string[] {
+	if (language && lines.length > 0) {
+		const rendered = hostHighlight(lines.join("\n"), language);
+		if (rendered && rendered.length > 0) return rendered;
+	}
+	return lines.map((line) => fg("toolOutput", line));
+}
+
+function buildCollapsed(
+	toolName: string,
+	result: RenderResult,
+	options: ResultOptions,
+	context: ResultContext,
+	config: FoldConfig,
+): string[] {
+	const separator = fg("muted", " · ");
+	const headerPrefix = fg("dim", "⎿");
+	const rows: string[] = [];
+
+	// A streaming result only ever shows the running header. Skipping the text pass here
+	// keeps a growing `bash` output from being re-split on every update.
+	if (options.isPartial) {
+		const parts = [fg("muted", "running…")];
+		if (typeof context.durationMs === "number" && context.durationMs >= 1000) {
+			parts.push(fg("muted", formatDuration(context.durationMs)));
+		}
+		rows.push(`${headerPrefix}  ${parts.join(separator)}`);
+		return rows;
+	}
+
+	const text = contentText(result);
+	// Shell failures carry a trailing status line; count and preview only the payload.
+	const lines = splitLines(isShellTool(toolName) ? shellOutput(text) : text);
+
+	// `summary` toggles the `⎿` row on its own; the preview can then stand alone.
+	if (config.summary) {
+		const parts = summarizeParts(toolName, result, context, text, lines);
+		if (parts.length > 0) rows.push(`${headerPrefix}  ${parts.join(separator)}`);
+	}
+
+	// Shell failures carry the useful output, so they keep their preview.
+	const previewAllowed =
+		config.preview && config.previewLines > 0 && (!context.isError || isShellTool(toolName));
+	if (!previewAllowed) return rows;
+
+	const source = previewSource(toolName, result, context, text, lines);
+	if (!source) return rows;
+
+	const limit = Math.max(1, config.previewLines);
+	const shown =
+		source.lines.length > limit ? (source.tail ? source.lines.slice(-limit) : source.lines.slice(0, limit)) : source.lines;
+	const hidden = source.lines.length - shown.length;
+
+	// Align under the summary text, which starts two columns after `⎿`.
+	const indent = "   ";
+	const rendered = highlight(shown, source.highlightLanguage);
+	const gutter = source.startLine !== undefined ? String(source.startLine + shown.length - 1).length : 0;
+	const codeIndent = gutter > 0 ? `${indent}${" ".repeat(gutter)}  ` : indent;
+
+	for (let index = 0; index < shown.length; index++) {
+		const code = rendered[index] ?? fg("toolOutput", shown[index] ?? "");
+		if (gutter > 0 && source.startLine !== undefined) {
+			rows.push(`${indent}${fg("dim", String(source.startLine + index).padStart(gutter))}  ${code}`);
+		} else {
+			rows.push(`${indent}${code}`);
+		}
+	}
+
+	if (hidden > 0) {
+		const hint = config.hints
+			? `${fg("muted", " (")}${fg("muted", keyLabel("app.tools.expand", "ctrl+o"))}${fg("muted", " to expand)")}`
+			: "";
+		const label = source.tail ? plural(hidden, "earlier line") : plural(hidden, "more line");
+		rows.push(`${codeIndent}${fg("muted", `… ${label}`)}${hint}`);
+	}
+	return rows;
+}
