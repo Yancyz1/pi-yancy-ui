@@ -148,8 +148,9 @@ pi --no-extensions -e /path/to/pi-ext/extensions/fold/index.ts
 - 其余部分与经典模式的汇总相同（见下面那张表）。shell 失败时会在末尾追加输出首行
   作为失败原因。
 - 工具还在执行、尚无任何输出时，同一行显示 `running…` 代替汇总。
-- **`edit` 是例外**：它的 diff 预览画在调用行上，所以 compact 模式保留调用行
-  （按 `previewLines` 截断，末尾加 `… N more diff lines` 提示），放在状态行上方。
+- **`edit` 是例外**：状态行下方附 diff 预览，直接从原始 diff 文本切片——**改动行优先**
+  （`-`/`+` 红/绿着色），每处改动上下各保留 1 行上下文，总量钳制在 `previewLines + 2` 行，
+  末尾加 `… N more diff lines` 提示。不像 Pi 自顶向下的 diff 渲染会把行数浪费在开头上下文上。
   `write` 维持单行。
 - 按 `ctrl+o`（或点击该行）展开成 Pi 原生的调用行和完整结果，与经典模式一致。
 

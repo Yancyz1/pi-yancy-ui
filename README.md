@@ -158,9 +158,11 @@ extension — see [Troubleshooting](#troubleshooting).
   reason.
 - While the tool runs and has not produced any output yet, the same line shows
   `running…` in place of the summary.
-- **`edit` is the exception**: its call row carries the diff preview, so compact mode
-  keeps it (capped to `previewLines` rows with a `… N more diff lines` hint) above the
-  status line. `write` stays a single line.
+- **`edit` is the exception**: under the status line it shows a diff preview built
+  from the raw diff — **changed lines first** (`-`/`+` in red/green), one context
+  line on each side, capped to `previewLines + 2` rows with a
+  `… N more diff lines` hint. Unlike Pi's own top-down diff render, the budget is
+  never wasted on leading context. `write` stays a single line.
 - Pressing `ctrl+o` (or clicking the row) expands to Pi's original call row and
   complete result, exactly like the classic mode.
 

@@ -56,11 +56,13 @@ green success, red failure), the title carries a short argument digest
 - `ToolRenderContext.expanded` is available to **both** renderers, so `renderCall`
   returns an empty component only while collapsed and hands back Pi's native row the
   moment the user expands.
-- `edit` is carved out: its native call row carries the diff preview, so compact mode
-  keeps it wrapped in a `Capped` component that slices the rendered rows to
-  `previewLines` (a `… N more diff lines` hint replaces the tail; `limit <= 0`
-  disables the cap). Its built-in result renderer is still invoked for the side
-  effect of settling the call row's diff/error state; only the compact line is shown.
+- `edit` is carved out: under the compact status line it appends a diff preview
+  sliced **directly from `details.diff` before any colouring** — changed lines
+  (`-`/`+`) first with one context line on each side, budget `previewLines + 2`,
+  hint `… N more diff lines` (`previewLines: 0` disables). Slicing before colouring
+  keeps constraint 4 intact and avoids the failure mode of capping Pi's rendered
+  diff from the top, where the budget is spent on leading context lines. The call
+  row stays hidden; the previous `Capped`-wrapper approach was removed.
   `write` stays a single line — its call-row preview is content, which the summary
   (`wrote N lines`) covers well enough.
 - Before the first result arrives (`isPartial` is `true` from construction), the call

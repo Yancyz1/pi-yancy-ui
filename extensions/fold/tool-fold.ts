@@ -20,7 +20,7 @@ import { Text, type Component } from "@earendil-works/pi-tui";
 
 import { configGeneration, type FoldConfig } from "./config";
 import { hostHighlight, hostLanguageForPath } from "./host";
-import { bold, fg, keyLabel, safeWidth, truncateToWidth } from "./palette";
+import { bold, fg, keyLabel, truncateToWidth } from "./palette";
 import { Row, callBaseRenderer, emptyComponent, innerOf, withInner } from "./recycle";
 
 type CallRenderer = NonNullable<ToolRenderers["renderCall"]>;
@@ -75,19 +75,6 @@ export function installToolFold(pi: ExtensionAPI, config: FoldConfig): void {
 				// tool, its arguments, and the outcome. `expanded` is part of ToolRenderContext,
 				// so the native row comes back verbatim the moment the user expands.
 				if (config.enabled && config.tools && config.compact && context?.expanded === false) {
-					// The edit call row carries the diff preview (Pi draws it there, not in the
-					// result), so compact mode keeps it — capped to a few rows. Everything else
-					// folds to the single status line.
-					if (toolName === "edit") {
-						const inner = innerOf(context?.lastComponent);
-						const child = callBaseRenderer(baseRenderCall, [args, theme], context, inner);
-						return new Capped(child ?? emptyComponent(), {
-							pad: padFor(context),
-							limit: config.previewLines,
-							hints: config.hints,
-							signal: configGeneration,
-						});
-					}
 					return compactCallRow(toolName, args, context, padFor(context));
 				}
 				const inner = innerOf(context?.lastComponent);
@@ -119,12 +106,6 @@ export function installToolFold(pi: ExtensionAPI, config: FoldConfig): void {
 
 				// Compact mode: one `● tool args · outcome` line replaces call + summary rows.
 				if (config.compact) {
-					if (toolName === "edit") {
-						// The built-in result renderer settles the call row's diff and error state
-						// (via state.callComponent). We only need that side effect; the compact
-						// line below is the visible result row.
-						callBaseRenderer(baseRenderResult, [result, options, theme], context, undefined);
-					}
 					return compactResultRow(toolName, result, options, context, config, padFor(context));
 				}
 
@@ -282,7 +263,29 @@ function compactResultRow(
 
 	const separator = fg("muted", " · ");
 	const body = parts.length > 0 ? `${separator}${parts.join(separator)}` : "";
-	return new Text(`${icon} ${compactTitle(toolName, context?.args)}${body}`, pad, 0);
+	const rows = [`${icon} ${compactTitle(toolName, context?.args)}${body}`];
+
+	// The edit diff is the payload people actually read; append a changed-lines-first
+	// preview under the status line. Sliced from details.diff before colouring, so a
+	// huge diff costs budget rows, not the whole file.
+	if (toolName === "edit" && !options.isPartial) {
+		const diff = (result?.details as { diff?: unknown } | undefined)?.diff;
+		if (typeof diff === "string" && diff.length > 0) {
+			const budget = config.previewLines > 0 ? config.previewLines + 2 : 0;
+			const { rows: picked, hidden } = selectDiffRows(parseDiffEntries(diff), budget);
+			for (const entry of picked) {
+				rows.push(`  ${colorDiffRow(entry)}`);
+			}
+			if (hidden > 0) {
+				const hint = config.hints
+					? `${fg("muted", " (")}${fg("muted", keyLabel("app.tools.expand", "ctrl+o"))}${fg("muted", " to expand)")}`
+					: "";
+				rows.push(`  ${fg("muted", `… ${plural(hidden, "more diff line")}`)}${hint}`);
+			}
+		}
+	}
+
+	return new Text(rows.join("\n"), pad, 0);
 }
 
 function callFallback(toolName: string, args: unknown): Text {
@@ -601,65 +604,59 @@ function buildCollapsed(
 }
 
 /**
- * Row-count cap around a native component that renders an unbounded payload (the
- * edit call row's diff). The child still renders in full — the diff only exists as
- * component output — but the transcript keeps a constant-ish number of rows, and
- * `ctrl+o` shows the uncapped native view. A `limit <= 0` disables the cap.
+ * Compact diff preview for `edit`: sliced from the raw diff text before any
+ * colouring, changed lines (`-`/`+`) first, with one context line on each side
+ * of a change. This keeps the preview meaningful even for diffs whose first
+ * rendered rows would be pure context — the failure mode of slicing Pi's
+ * rendered diff from the top.
  */
-class Capped implements Component {
-	private readonly inner: Component;
-	private readonly pad: number;
-	private readonly limit: number;
-	private readonly hints: boolean;
-	private readonly signal: (() => number) | undefined;
-	private memo: { width: number; signal: number; lines: string[] } | undefined;
 
-	constructor(
-		inner: Component,
-		options: { pad?: number; limit?: number; hints?: boolean; signal?: () => number } = {},
-	) {
-		this.inner = inner;
-		this.pad = Math.max(0, Math.floor(options.pad ?? 0));
-		this.limit = Math.floor(options.limit ?? 0);
-		this.hints = options.hints ?? true;
-		this.signal = options.signal;
+interface DiffEntry {
+	prefix: string;
+	text: string;
+	changed: boolean;
+}
+
+/** Same line shape Pi's own renderDiff parses: `+123 content` / ` 123 content`. */
+function parseDiffEntries(diff: string): DiffEntry[] {
+	return diff.split("\n").map((line) => {
+		const match = line.match(/^([+-\s])(\s*\d*)\s(.*)$/);
+		return {
+			prefix: match ? match[1] : " ",
+			text: line,
+			changed: !!match && (match[1] === "+" || match[1] === "-"),
+		};
+	});
+}
+
+function selectDiffRows(entries: DiffEntry[], budget: number): { rows: DiffEntry[]; hidden: number } {
+	if (budget <= 0 || entries.length === 0) return { rows: [], hidden: entries.length };
+	const changedAt = entries.map((entry, index) => (entry.changed ? index : -1)).filter((index) => index >= 0);
+
+	// Nothing changed in this diff: show its head rather than an empty preview.
+	if (changedAt.length === 0) {
+		return { rows: entries.slice(0, budget), hidden: Math.max(0, entries.length - budget) };
 	}
 
-	invalidate(): void {
-		this.memo = undefined;
-		try {
-			this.inner.invalidate();
-		} catch {
-			// A child that cannot invalidate is still rendered from its own state.
-		}
+	// Seed each change with one context line on each side, then shed context rows
+	// from the outside in until the selection fits the budget.
+	const keep = new Set<number>();
+	for (const index of changedAt) {
+		keep.add(index - 1);
+		keep.add(index);
+		keep.add(index + 1);
 	}
-
-	render(width: number): string[] {
-		const safe = safeWidth(width);
-		const signal = this.signal ? this.signal() : 0;
-		if (this.memo && this.memo.width === safe && this.memo.signal === signal) {
-			return [...this.memo.lines];
-		}
-
-		let body: string[] = [];
-		try {
-			const rendered = this.inner.render(Math.max(1, safe - this.pad));
-			if (Array.isArray(rendered)) body = rendered;
-		} catch {
-			body = [];
-		}
-
-		let lines = body;
-		if (this.limit > 0 && body.length > this.limit) {
-			const hidden = body.length - this.limit;
-			const hint = this.hints
-				? `${fg("muted", " (")}${fg("muted", keyLabel("app.tools.expand", "ctrl+o"))}${fg("muted", " to expand)")}`
-				: "";
-			lines = [...body.slice(0, this.limit), `${fg("muted", `… ${plural(hidden, "more diff line")}`)}${hint}`];
-		}
-
-		const pad = " ".repeat(this.pad);
-		this.memo = { width: safe, signal, lines: lines.map((line) => truncateToWidth(pad + line, safe)) };
-		return [...this.memo.lines];
+	let indices = [...keep].filter((i) => i >= 0 && i < entries.length).sort((a, b) => a - b);
+	while (indices.length > budget) {
+		const contextIndex = indices.find((i) => !entries[i]?.changed);
+		if (contextIndex === undefined) break;
+		indices = indices.filter((i) => i !== contextIndex);
 	}
+	if (indices.length > budget) indices = indices.slice(0, budget);
+	return { rows: indices.map((i) => entries[i] as DiffEntry), hidden: entries.length - indices.length };
+}
+
+function colorDiffRow(entry: DiffEntry): string {
+	const tone = entry.changed ? (entry.prefix === "+" ? "toolDiffAdded" : "toolDiffRemoved") : "toolDiffContext";
+	return fg(tone, entry.text);
 }

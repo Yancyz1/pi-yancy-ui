@@ -285,15 +285,28 @@ test("compact: a summary-less config still shows the tool digest", () => {
 	excludes(out, "⎿");
 });
 
-test("compact: edit keeps its native call row (the diff preview lives there)", () => {
-	const { resolvers } = toolSetup({ compact: true });
+test("compact: edit shows its changed lines first, with a context line each side", () => {
+	const { resolvers } = toolSetup({ compact: true, previewLines: 3 });
 	const renderers = resolveTool(resolvers, "edit", "self");
-	const context = { args: { path: "a.ts" }, outputPad: 0, executionStarted: true, isError: false, state: {}, expanded: false };
-	const row = renderers.renderCall({ path: "a.ts" }, theme, context);
-	includes(flatten(row), "CALL:edit");
-	// The result line is still the compact status line.
-	const out = flatten(renderers.renderResult(textResult("ok", { diff: "+a\n-b" }), { expanded: false, isPartial: false }, theme, context));
+	const diff = [
+		"  90 import { x } from \"y\";",
+		"- 91 const a = 1;",
+		"+ 91 const a = 2;",
+		"  92 // tail",
+		"  93 // more tail",
+	].join("\n");
+	const context = { args: { path: "a.ts" }, outputPad: 0, executionStarted: true, isError: false, state: {} };
+	const out = flatten(renderers.renderResult(textResult("ok", { diff }), { expanded: false, isPartial: false }, theme, context));
 	matches(out, /● edit a\.ts · \+1 · -1/);
+	includes(out, "- 91 const a = 1;");
+	includes(out, "+ 91 const a = 2;");
+	includes(out, "90 import");
+	includes(out, "92 // tail");
+	excludes(out, "93 // more tail");
+	matches(out, /… 1 more diff line/);
+	// The call row stays hidden — the diff now lives under the status line.
+	const call = renderers.renderCall({ path: "a.ts" }, theme, { ...context, expanded: false });
+	excludes(flatten(call), "CALL:edit");
 });
 
 test("compact: other tools still hide the call row", () => {
@@ -303,28 +316,32 @@ test("compact: other tools still hide the call row", () => {
 	excludes(flatten(row), "CALL:read");
 });
 
-test("compact: the edit call row is capped with a hint", () => {
+test("compact: the edit diff budget caps many changes and hints the remainder", () => {
 	const { resolvers } = toolSetup({ compact: true, previewLines: 3 });
-	const multilineBase = () => ({
-		renderShell: "self",
-		renderCall: () => new Text(Array.from({ length: 10 }, (_, i) => `diff line ${i + 1}`).join("\n"), 0, 0),
-		renderResult: () => new Text("NATIVE", 0, 0),
-	});
-	const renderers = resolvers[0]("edit", multilineBase);
-	const out = flatten(
-		renderers.renderCall({ path: "a.ts" }, theme, { args: { path: "a.ts" }, outputPad: 0, state: {}, expanded: false }),
-	);
-	includes(out, "diff line 3");
-	excludes(out, "diff line 4");
-	matches(out, /… 7 more diff lines/);
+	const renderers = resolveTool(resolvers, "edit", "self");
+	const diff = Array.from({ length: 12 }, (_, i) => `${i % 2 === 0 ? "-" : "+"} ${i + 1} line ${i + 1}`).join("\n");
+	const context = { args: { path: "a.ts" }, outputPad: 0, executionStarted: true, isError: false, state: {} };
+	const out = flatten(renderers.renderResult(textResult("ok", { diff }), { expanded: false, isPartial: false }, theme, context));
+	includes(out, "- 1 line 1");
+	includes(out, "+ 2 line 2");
+	matches(out, /… \d+ more diff lines/);
+	const contentRows = out.split("\n").filter((line) => /line \d+/.test(line)).length;
+	eq(contentRows, 5); // previewLines + 2
 
-	// limit <= 0 disables the cap.
-	const { resolvers: uncapped } = toolSetup({ compact: true, previewLines: 0 });
-	const renderers3 = uncapped[0]("edit", multilineBase);
+	// previewLines: 0 disables the preview entirely.
+	const { resolvers: off } = toolSetup({ compact: true, previewLines: 0 });
+	const renderers2 = resolveTool(off, "edit", "self");
 	const out2 = flatten(
-		renderers3.renderCall({ path: "a.ts" }, theme, { args: { path: "a.ts" }, outputPad: 0, state: {}, expanded: false }),
+		renderers2.renderResult(textResult("ok", { diff }), { expanded: false, isPartial: false }, theme, {
+			args: { path: "a.ts" },
+			outputPad: 0,
+			executionStarted: true,
+			isError: false,
+			state: {},
+		}),
 	);
-	includes(out2, "diff line 10");
+	matches(out2, /● edit a\.ts/);
+	excludes(out2, "line 1");
 });
 
 test("tool: disabled folding passes through", () => {
