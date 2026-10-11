@@ -22,11 +22,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | 命令 | 用途 |
 |---|---|
 | `npm run typecheck` | `tsc --noEmit`（`strict` + `verbatimModuleSyntax`）。必须零报错。 |
-| `npm test` | 87 条断言，覆盖折叠、思考、轮次汇总、配置、命令接线。 |
+| `npm test` | 99 条断言，覆盖折叠、思考、轮次汇总、配置、命令接线。 |
 | `npm run smoke` | 人类可读的渲染输出。改动可见输出时用。 |
 | `npm run bench` | 折叠渲染 vs Pi 原生展开渲染的开销。 |
 | `npm run verify:host` | 走 Pi 真实的 `virtualModules` 映射加载 `host.ts`，而非普通 Node 解析。 |
-| `npm run dev` | 实机试跑：`pi --no-extensions -e ./extensions/fold/index.ts`。 |
+| `npm run dev` | 实机试跑：`pi --no-extensions -e ./extensions/yancy-ui/index.ts`。 |
 
 **改完必须跑 `npm run typecheck && npm test` 才算完成。**动了 host 访问器还要跑 `verify:host`；
 动了渲染输出还要跑 `smoke`。
@@ -40,7 +40,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 架构
 
-`pi-yancy-ui` 是一个 Pi 扩展，通过 `package.json` → `pi.extensions` → `extensions/fold/index.ts`
+`pi-yancy-ui` 是一个 Pi 扩展，通过 `package.json` → `pi.extensions` → `extensions/yancy-ui/index.ts`
 注册。它**只改渲染** —— 工具执行、模型上下文、会话文件都不动。只有 peerDependencies，
 无运行时依赖。
 
@@ -53,7 +53,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   所以补丁打在 `AssistantMessageComponent.prototype.updateContent` 上：先调真正的前任，再给隐藏的
   思考 `Text` 子节点换标签。计时存在按组件索引的 `WeakMap` 里，并无条件 drain 进轮次计数。
 - **M3 轮次汇总**（`turn-summary.ts`）—— 追加一个自定义 entry
-  `pi.appendEntry("fold-turn", …)`，用官方 `registerEntryRenderer` 画出来。在 `agent_settled`
+  `pi.appendEntry("yancyui-turn", …)`，用官方 `registerEntryRenderer` 画出来。在 `agent_settled`
   上结算，而不是 `agent_end`。
 
 ### 跨文件不变量
@@ -62,7 +62,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   （`recycle.ts` 的 `innerOf` / `callBaseRenderer`）；`Symbol.for("pi-yancy-ui.prototype-patches")`
   把补丁状态注册在目标方法上（`patch.ts`）。reload、组件回收、卸载还原全都依赖这两个查找点
   是**唯一**的。
-- **配置按引用在渲染时读取。** `/fold` 改的是 `index.ts` 里创建的那个唯一 `FoldConfig` 对象；
+- **配置按引用在渲染时读取。** `/yancyui` 改的是 `index.ts` 里创建的那个唯一 `YancyUiConfig` 对象；
   渲染器必须在渲染时读取它（并把 `config.ts` 的 `configGeneration()` 纳入 memo key），
   绝不能在建补丁时把配置快照进去。
 - **失败永远是局部的。** 可选 host API 只能经 `host.ts` 的访问器拿到，每个访问器都自校验并吞异常。

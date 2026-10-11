@@ -13,7 +13,7 @@ collapse to one line each, and expand again with Pi's own keys.
 ```
 
 Each finished tool call is a single status line (compact mode, the default).
-`/fold compact` switches back to the two-line layout:
+`/yancyui compact` switches back to the two-line layout:
 
 ```
 ● read  src/injector.ts
@@ -75,7 +75,7 @@ Each finished tool call is a single status line (compact mode, the default).
 From the package directory:
 
 ```bash
-pi install /path/to/pi-ext
+pi install /path/to/pi-yancy-ui
 ```
 
 `pi` reads the `pi.extensions` field in `package.json` and adds the extension to
@@ -83,7 +83,7 @@ your settings, so it loads on every start.
 
 ```bash
 pi list              # confirm it is registered
-pi remove /path/to/pi-ext   # remove it again
+pi remove /path/to/pi-yancy-ui   # remove it again
 ```
 
 ### Alternative: symlink into the extensions folder
@@ -91,24 +91,24 @@ pi remove /path/to/pi-ext   # remove it again
 macOS / Linux:
 
 ```bash
-ln -s "/path/to/pi-ext/extensions/fold" ~/.pi/agent/extensions/fold
+ln -s "/path/to/pi-yancy-ui/extensions/yancy-ui" ~/.pi/agent/extensions/yancy-ui
 ```
 
 Windows (PowerShell):
 
 ```powershell
 New-Item -ItemType SymbolicLink `
-  -Path "$env:USERPROFILE\.pi\agent\extensions\fold" `
-  -Target "C:\path\to\pi-ext\extensions\fold"
+  -Path "$env:USERPROFILE\.pi\agent\extensions\yancy-ui" `
+  -Target "C:\path\to\pi-yancy-ui\extensions\yancy-ui"
 ```
 
-Copying the `extensions/fold` folder there works too; a symlink just keeps it in
+Copying the `extensions/yancy-ui` folder there works too; a symlink just keeps it in
 sync with this repo.
 
 ### Try it for one session
 
 ```bash
-pi --no-extensions -e /path/to/pi-ext/extensions/fold/index.ts
+pi --no-extensions -e /path/to/pi-yancy-ui/extensions/yancy-ui/index.ts
 ```
 
 `--no-extensions` disables other discovered extensions; explicit `-e` paths still
@@ -120,7 +120,7 @@ extension — see [Troubleshooting](#troubleshooting).
 1. Start Pi and check that the extension is live:
 
    ```
-   /fold status
+   /yancyui status
    ```
 
    You should see something like
@@ -129,11 +129,11 @@ extension — see [Troubleshooting](#troubleshooting).
 2. Enable thinking folding **once**:
 
    ```
-   /fold init
+   /yancyui init
    ```
 
    Pi only collapses thinking blocks when its own `hideThinkingBlock` setting is on,
-   and it reads that setting at startup. `/fold init` writes it to
+   and it reads that setting at startup. `/yancyui init` writes it to
    `~/.pi/agent/settings.json` and reloads automatically when the session is idle.
    Without this step, thinking blocks render in full and the extension leaves them
    alone.
@@ -185,7 +185,7 @@ call renderer, unchanged.
      … 37 more lines (ctrl+o to expand)
 ```
 
-- `⎿` starts the summary line. It is optional (`/fold summary`).
+- `⎿` starts the summary line. It is optional (`/yancyui summary`).
 - `42 lines` is the summary, tool-specific — see the table below.
 - `0.3s` is the tool duration. It only appears for tools that took **1 second or
   longer**.
@@ -278,47 +278,47 @@ Rebind them in Pi's keybindings as usual; the hints follow your binding.
 
 ## Commands
 
-Everything lives under `/fold`.
+Everything lives under `/yancyui`.
 
 | Command | Effect |
 |---|---|
-| `/fold` | Toggle folding on/off (same as `/fold toggle`) |
-| `/fold on` · `/fold off` | Enable / disable everything |
-| `/fold tools` | Toggle tool folding |
-| `/fold compact` | Toggle single-line tool rows (`● tool args · outcome`) |
-| `/fold diff` | Toggle the edit diff preview under compact `edit` rows |
-| `/fold thinking` | Toggle thinking folding |
-| `/fold summary` | Toggle the `⎿ summary` row |
-| `/fold preview` | Toggle the truncated preview |
-| `/fold turn` | Toggle the per-turn `✻ Worked for …` summary |
-| `/fold hints` | Toggle the `(ctrl+o to expand)` hint |
-| `/fold init` | Write `hideThinkingBlock: true` to Pi's settings and reload |
-| `/fold status` | Show the current settings and patch state |
+| `/yancyui` | Toggle folding on/off (same as `/yancyui toggle`) |
+| `/yancyui on` · `/yancyui off` | Enable / disable everything |
+| `/yancyui tools` | Toggle tool folding |
+| `/yancyui compact` | Toggle single-line tool rows (`● tool args · outcome`) |
+| `/yancyui diff` | Toggle the edit diff preview under compact `edit` rows |
+| `/yancyui thinking` | Toggle thinking folding |
+| `/yancyui summary` | Toggle the `⎿ summary` row |
+| `/yancyui preview` | Toggle the truncated preview |
+| `/yancyui turn` | Toggle the per-turn `✻ Worked for …` summary |
+| `/yancyui hints` | Toggle the `(ctrl+o to expand)` hint |
+| `/yancyui init` | Write `hideThinkingBlock: true` to Pi's settings and reload |
+| `/yancyui status` | Show the current settings and patch state |
 
 Examples:
 
 ```
-/fold off            # temporarily stop folding, keep the extension loaded
-/fold preview        # keep summaries, drop the preview block
-/fold turn           # stop the per-turn footer
-/fold status         # what is on right now?
+/yancyui off            # temporarily stop folding, keep the extension loaded
+/yancyui preview        # keep summaries, drop the preview block
+/yancyui turn           # stop the per-turn footer
+/yancyui status         # what is on right now?
 ```
 
 Changes apply **immediately** to new rows, and already-rendered rows are repainted
-for the part you changed. Settings persist to `fold.json` (see below) and survive a
-restart. `Folding on/off` via `/fold` is saved too, so use `/fold init` only for the
+for the part you changed. Settings persist to `yancy-ui.json` (see below) and survive a
+restart. `Folding on/off` via `/yancyui` is saved too, so use `/yancyui init` only for the
 one-time `hideThinkingBlock` setup.
 
 ## Configuration
 
-### `fold.json`
+### `yancy-ui.json`
 
-`/fold` writes here:
+`/yancyui` writes here:
 
 | Platform | Path |
 |---|---|
-| Default | `~/.pi/agent/fold.json` |
-| Custom agent dir | `$PI_CODING_AGENT_DIR/fold.json` |
+| Default | `~/.pi/agent/yancyui.json` |
+| Custom agent dir | `$PI_CODING_AGENT_DIR/yancyui.json` |
 
 The path comes from Pi's own `getAgentDir()`, so it follows your Pi installation
 instead of guessing.
@@ -357,7 +357,7 @@ Example:
 ```
 
 The file is read once when the extension loads. Edit it while Pi is stopped, or use
-`/fold` to change things live.
+`/yancyui` to change things live.
 
 ### `hideThinkingBlock`
 
@@ -368,30 +368,30 @@ setting, stored in `~/.pi/agent/settings.json`:
 { "hideThinkingBlock": true }
 ```
 
-`/fold init` sets it for you. `ctrl+t` toggles the same setting and persists it, so
+`/yancyui init` sets it for you. `ctrl+t` toggles the same setting and persists it, so
 revealing thinking once will turn folding off until you hide it again.
 
 ### CLI flag
 
 ```
-pi --fold     # start with folding enabled, overriding fold.json
+pi --yancyui     # start with folding enabled, overriding yancy-ui.json
 ```
 
 There is no `--no-fold`; a boolean flag cannot be negated from the command line (Pi
-reports it as an unknown option). Use `/fold off` or edit `fold.json`.
+reports it as an unknown option). Use `/yancyui off` or edit `yancy-ui.json`.
 
 ## Turning parts off
 
 | I want… | Do this |
 |---|---|
-| No folding at all, extension still loaded | `/fold off` |
-| Folding, but no previews | `/fold preview` |
-| Summaries only, no preview and no hint | `/fold preview` + `/fold hints` |
-| Tools folded, thinking left alone | `/fold thinking` |
-| No per-turn footer | `/fold turn` |
-| Thinking folded, tools left alone | `/fold tools` |
+| No folding at all, extension still loaded | `/yancyui off` |
+| Folding, but no previews | `/yancyui preview` |
+| Summaries only, no preview and no hint | `/yancyui preview` + `/yancyui hints` |
+| Tools folded, thinking left alone | `/yancyui thinking` |
+| No per-turn footer | `/yancyui turn` |
+| Thinking folded, tools left alone | `/yancyui tools` |
 
-`/fold off` keeps the extension loaded and responsive to `/fold`, which makes it easy
+`/yancyui off` keeps the extension loaded and responsive to `/yancyui`, which makes it easy
 to compare against Pi's stock rendering. To remove the extension entirely, see
 [Uninstall](#uninstall).
 
@@ -399,19 +399,19 @@ to compare against Pi's stock rendering. To remove the extension entirely, see
 
 **Thinking blocks are not folded / I see Pi's `Thinking...`.**
 
-Run `/fold init` (and reload if asked). Pi must have `hideThinkingBlock: true`, which
+Run `/yancyui init` (and reload if asked). Pi must have `hideThinkingBlock: true`, which
 it only reads at startup. `ctrl+t` also flips this setting, so if you revealed
 thinking manually, hide it again.
 
-**`/fold status` reports `patch=no`.**
+**`/yancyui status` reports `patch=no`.**
 
 The private hook that decorates thinking labels (`AssistantMessageComponent.prototype.updateContent`)
 is no longer reachable in your Pi build. Thinking falls back to Pi's native rendering
 and everything else keeps working. Please open an issue with your Pi version.
 
-**Nothing changed after I edited `fold.json`.**
+**Nothing changed after I edited `yancy-ui.json`.**
 
-The file is read at load time. Use `/fold …` for live changes, or restart Pi.
+The file is read at load time. Use `/yancyui …` for live changes, or restart Pi.
 
 **Rows look wrong / flip between two layouts.**
 
@@ -425,7 +425,7 @@ Previews are truncated to the visible width, and the summary/hint lines are meas
 with `visibleWidth`, so emoji-width cells stay aligned. If a glyph still misaligns,
 please report the terminal and width.
 
-**`/fold init` says it could not write settings.**
+**`/yancyui init` says it could not write settings.**
 
 The agent directory is not writable. Fix permissions on `~/.pi/agent`, or set
 `PI_CODING_AGENT_DIR` to a writable directory.
@@ -440,7 +440,7 @@ entrypoints before, so the extension resolves it through a small compatibility s
 else — the session never breaks.
 
 **After a Pi update.** Tool folding and the turn summary should keep working
-unchanged. If the private hook moves, `/fold status` flips to `patch=no` and thinking
+unchanged. If the private hook moves, `/yancyui status` flips to `patch=no` and thinking
 renders natively.
 
 **Platforms.** Pure Node APIs, no shell commands and no OS-specific code. The config
@@ -457,12 +457,12 @@ Implementation details, the compatibility shim, and the benchmark live in
 ## Uninstall
 
 ```bash
-pi remove /path/to/pi-ext
+pi remove /path/to/pi-yancy-ui
 ```
 
 Or delete the symlink/copy from `~/.pi/agent/extensions/`, and remove
-`~/.pi/agent/fold.json`. To also restore Pi's defaults for thinking, either run
-`/fold` and stop using the extension, or set `hideThinkingBlock: false` in
+`~/.pi/agent/yancyui.json`. To also restore Pi's defaults for thinking, either run
+`/yancyui` and stop using the extension, or set `hideThinkingBlock: false` in
 `~/.pi/agent/settings.json`.
 
 ## Development

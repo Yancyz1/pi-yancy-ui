@@ -6,7 +6,7 @@
 ## 项目是什么
 
 一个 Pi 扩展（包名 `pi-yancy-ui`），通过 `package.json` → `pi.extensions` →
-`extensions/fold/index.ts` 注册。它**只改渲染**：
+`extensions/yancy-ui/index.ts` 注册。它**只改渲染**：
 
 - **M1 工具折叠** —— 工具调用 + 结果收成 `● 调用` / `⎿ 汇总`（外加几行预览），
   用 Pi 自带的 `ctrl+o` 展开。
@@ -19,7 +19,7 @@
 
 ## 本机环境
 
-- Windows，仓库在 `D:\code\vibe_coding\pi-ext`。Bash（MSYS）的当前目录就是它。
+- Windows，仓库在 `D:\code\vibe_coding\pi-yancy-ui`。Bash（MSYS）的当前目录就是它。
 - Node v24 位于 `/mnt/d/program2/nvm/nodejs/node.exe`。**`node` 不在 bash 的 PATH 上** ——
   用完整路径，或设 `PATH="$PATH:/mnt/d/program2/nvm/nodejs"`。下文的 `npm run …`
   是可移植写法。
@@ -29,11 +29,11 @@
 | 命令 | 用途 |
 |---|---|
 | `npm run typecheck` | `tsc --noEmit`。必须零报错。 |
-| `npm test` | 87 条断言，覆盖折叠、思考、轮次汇总、配置、命令接线。任何回归退出码 1。 |
+| `npm test` | 99 条断言，覆盖折叠、思考、轮次汇总、配置、命令接线。任何回归退出码 1。 |
 | `npm run smoke` | 人类可读的渲染输出，不需要 TUI / 模型。改动可见输出时用。 |
 | `npm run bench` | 折叠渲染 vs 原生的开销。动渲染热路径时用。 |
 | `npm run verify:host` | 走 Pi 真实的 `virtualModules` 映射加载 `host.ts`，而非普通 Node 解析。 |
-| `npm run dev` | `pi --no-extensions -e ./extensions/fold/index.ts`，实机试跑。 |
+| `npm run dev` | `pi --no-extensions -e ./extensions/yancy-ui/index.ts`，实机试跑。 |
 
 **改完必须跑 `npm run typecheck && npm test` 才算完成。** 动了 host API 还要跑
 `verify:host`；动了渲染输出还要跑 `smoke`。
@@ -41,9 +41,9 @@
 ## 目录结构
 
 ```
-extensions/fold/
-  index.ts           入口：加载配置、/fold 命令、生命周期接线
-  config.ts          fold.json 读写 + 校验，写入 settings.json
+extensions/yancy-ui/
+  index.ts           入口：加载配置、/yancyui 命令、生命周期接线
+  config.ts          yancy-ui.json 读写 + 校验，写入 settings.json
   host.ts            唯一读取私有/半私有 host API 的模块
   palette.ts         主题查询、fg/bg/bold/italic、按键名、宽度工具
   patch.ts           幂等、可链式回退的原型补丁
@@ -75,7 +75,7 @@ extensions/fold/
    方法改名只能让某个功能降级，绝不能弄挂扩展加载、也不能把异常抛进 Pi 的渲染循环。
 6. **`host.ts` 是唯一**接触私有/半私有 host 接口的地方。在那里加带守卫的访问器，
    不要在别处 import 这类 API。新访问器要有 `verify-host.mjs` 覆盖。
-7. **配置按引用实时读取。** `/fold` 修改的是同一个 `FoldConfig` 对象；渲染器必须在渲染
+7. **配置按引用实时读取。** `/yancyui` 修改的是同一个 `YancyUiConfig` 对象；渲染器必须在渲染
    时读取（并把 `configGeneration()` 纳入 memo key），绝不能在建补丁时快照。
 8. **原型补丁必须走 `patch.ts`。** 它以 `Symbol.for("pi-yancy-ui.prototype-patches")` 在
    目标上注册，reload 时复用真正的 predecessor，被顶替时转发，`restore()` 还原原始
@@ -98,7 +98,7 @@ extensions/fold/
 
 ## 文档地图
 
-- `README.md` / `README.zh-CN.md` —— 面向用户：按键、`/fold` 命令、配置、
+- `README.md` / `README.zh-CN.md` —— 面向用户：按键、`/yancyui` 命令、配置、
   各工具汇总对照表、疑难排查。
 - `docs/ARCHITECTURE.md` —— 数据流、回收与补丁设计、host shim 对照表、
   基准数据、测试策略、已知限制。

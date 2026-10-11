@@ -51,7 +51,7 @@ const CONFIG_KEYS = Object.keys(DEFAULT_CONFIG) as (keyof YancyUiConfig)[];
 
 /**
  * Bumped whenever the live config object changes. Renderers include it in their
- * memo keys so a `/fold` toggle repaints the transcript on the next render.
+ * memo keys so a `/yancyui` toggle repaints the transcript on the next render.
  */
 let generation = 0;
 

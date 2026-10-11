@@ -6,9 +6,9 @@ alive across Pi releases. For user-facing behaviour see [../README.md](../README
 ## Layout
 
 ```
-extensions/fold/
-  index.ts           entry point: config load, /fold command, lifecycle wiring
-  config.ts          fold.json read/write + validation, settings.json write
+extensions/yancy-ui/
+  index.ts           entry point: config load, /yancyui command, lifecycle wiring
+  config.ts          yancy-ui.json read/write + validation, settings.json write
   host.ts            compatibility shim over @earendil-works/pi-coding-agent
   palette.ts         theme lookup, fg/bg/bold/italic, key labels, width helpers
   patch.ts           idempotent, chain-aware prototype patching
@@ -32,8 +32,8 @@ AssistantMessageComponent.updateContent
       └─▶ patched ──▶ built-in updateContent ──▶ decorate hidden thinking Text
 
 agent_settled
-      └─▶ turn-summary ──▶ pi.appendEntry("fold-turn", data)
-                                └─▶ registerEntryRenderer("fold-turn") draws it
+      └─▶ turn-summary ──▶ pi.appendEntry("yancyui-turn", data)
+                                └─▶ registerEntryRenderer("yancyui-turn") draws it
 ```
 
 Everything in the collapsed path is derived from data Pi already gives the renderer:
@@ -63,7 +63,7 @@ green success, red failure), the title carries a short argument digest
   keeps constraint 4 intact and avoids the failure mode of capping Pi's rendered
   diff from the top, where the budget is spent on leading context lines. The call
   row stays hidden; the previous `Capped`-wrapper approach was removed. Gated by
-  `config.editDiff` (`/fold diff`).
+  `config.editDiff` (`/yancyui diff`).
   Compact rows indent by `outputPad` regardless of the tool's own shell mode, so a
   self-padded tool (`edit`) lines up with everything else.
   `write` stays a single line — its call-row preview is content, which the summary
@@ -138,7 +138,7 @@ nothing and Pi's native rendering stays in place.
 
 Pi has no hook for inserting a transcript component, and reparenting the chat
 container is fragile. Instead the extension appends a durable custom entry
-(`pi.appendEntry("fold-turn", …)`) and renders it with the official
+(`pi.appendEntry("yancyui-turn", …)`) and renders it with the official
 `registerEntryRenderer`. The entry is session data and never enters model context.
 
 It finalises on `agent_settled` — which fires once per turn and carries `aborted` —

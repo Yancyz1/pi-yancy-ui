@@ -12,7 +12,7 @@
 ✻ Worked for 12.3s · 3 tools · thought 4.1s
 ```
 
-每个已完成的工具调用收成一行状态行（compact 模式，默认开启）。`/fold compact`
+每个已完成的工具调用收成一行状态行（compact 模式，默认开启）。`/yancyui compact`
 可以切回两行布局：
 
 ```
@@ -72,7 +72,7 @@
 在包目录下执行：
 
 ```bash
-pi install /path/to/pi-ext
+pi install /path/to/pi-yancy-ui
 ```
 
 `pi` 会读取 `package.json` 里的 `pi.extensions` 字段，把扩展登记进你的设置，之后每次启动
@@ -80,7 +80,7 @@ pi install /path/to/pi-ext
 
 ```bash
 pi list                     # 确认已登记
-pi remove /path/to/pi-ext   # 移除
+pi remove /path/to/pi-yancy-ui   # 移除
 ```
 
 ### 或者：软链到扩展目录
@@ -88,23 +88,23 @@ pi remove /path/to/pi-ext   # 移除
 macOS / Linux：
 
 ```bash
-ln -s "/path/to/pi-ext/extensions/fold" ~/.pi/agent/extensions/fold
+ln -s "/path/to/pi-yancy-ui/extensions/yancy-ui" ~/.pi/agent/extensions/yancy-ui
 ```
 
 Windows（PowerShell）：
 
 ```powershell
 New-Item -ItemType SymbolicLink `
-  -Path "$env:USERPROFILE\.pi\agent\extensions\fold" `
-  -Target "C:\path\to\pi-ext\extensions\fold"
+  -Path "$env:USERPROFILE\.pi\agent\extensions\yancy-ui" `
+  -Target "C:\path\to\pi-yancy-ui\extensions\yancy-ui"
 ```
 
-直接把 `extensions/fold` 目录复制过去也可以；用软链只是方便跟本仓库保持同步。
+直接把 `extensions/yancy-ui` 目录复制过去也可以；用软链只是方便跟本仓库保持同步。
 
 ### 只试一次
 
 ```bash
-pi --no-extensions -e /path/to/pi-ext/extensions/fold/index.ts
+pi --no-extensions -e /path/to/pi-yancy-ui/extensions/yancy-ui/index.ts
 ```
 
 `--no-extensions` 会关掉其它被发现的扩展，但显式用 `-e` 指定的路径仍会加载。首次尝试建议
@@ -115,7 +115,7 @@ pi --no-extensions -e /path/to/pi-ext/extensions/fold/index.ts
 1. 启动 Pi，确认扩展已生效：
 
    ```
-   /fold status
+   /yancyui status
    ```
 
    应该看到类似
@@ -124,11 +124,11 @@ pi --no-extensions -e /path/to/pi-ext/extensions/fold/index.ts
 2. **做一次**思考折叠的初始化：
 
    ```
-   /fold init
+   /yancyui init
    ```
 
    Pi 只有在自己的 `hideThinkingBlock` 为真时才会折叠思考块，而且这个设置只在启动时读取。
-   `/fold init` 会把它写进 `~/.pi/agent/settings.json`，并在会话空闲时自动重载。
+   `/yancyui init` 会把它写进 `~/.pi/agent/settings.json`，并在会话空闲时自动重载。
    跳过这一步，思考块会完整显示，扩展也不会去动它。
 
 3. 发一个会用到工具的提示，结果默认就是折叠状态。
@@ -172,7 +172,7 @@ pi --no-extensions -e /path/to/pi-ext/extensions/fold/index.ts
      … 37 more lines (ctrl+o to expand)
 ```
 
-- `⎿` 引出汇总行。可以通过 `/fold summary` 关掉。
+- `⎿` 引出汇总行。可以通过 `/yancyui summary` 关掉。
 - `42 lines` 是汇总内容，**因工具而异**——见下面那张表。
 - `0.3s` 是工具耗时，**只有耗时达到 1 秒及以上才显示**。
 - 缩进的那块是预览：默认显示前 `previewLines` 行（默认 5 行）。
@@ -260,46 +260,46 @@ pi-yancy-ui 不新增任何按键，只复用 Pi 的：
 
 ## 命令
 
-全部挂在 `/fold` 下。
+全部挂在 `/yancyui` 下。
 
 | 命令 | 作用 |
 |---|---|
-| `/fold` | 总开关取反（等同 `/fold toggle`） |
-| `/fold on` · `/fold off` | 全开 / 全关 |
-| `/fold tools` | 切换工具折叠 |
-| `/fold compact` | 切换单行工具行（`● 工具 参数 · 结果`） |
-| `/fold diff` | 切换 compact `edit` 行下方的 diff 预览 |
-| `/fold thinking` | 切换思考折叠 |
-| `/fold summary` | 切换 `⎿ summary` 汇总行 |
-| `/fold preview` | 切换截断预览 |
-| `/fold turn` | 切换每轮的 `✻ Worked for …` 汇总 |
-| `/fold hints` | 切换 `(ctrl+o to expand)` 提示 |
-| `/fold init` | 把 `hideThinkingBlock: true` 写进 Pi 设置并重载 |
-| `/fold status` | 显示当前设置和补丁状态 |
+| `/yancyui` | 总开关取反（等同 `/yancyui toggle`） |
+| `/yancyui on` · `/yancyui off` | 全开 / 全关 |
+| `/yancyui tools` | 切换工具折叠 |
+| `/yancyui compact` | 切换单行工具行（`● 工具 参数 · 结果`） |
+| `/yancyui diff` | 切换 compact `edit` 行下方的 diff 预览 |
+| `/yancyui thinking` | 切换思考折叠 |
+| `/yancyui summary` | 切换 `⎿ summary` 汇总行 |
+| `/yancyui preview` | 切换截断预览 |
+| `/yancyui turn` | 切换每轮的 `✻ Worked for …` 汇总 |
+| `/yancyui hints` | 切换 `(ctrl+o to expand)` 提示 |
+| `/yancyui init` | 把 `hideThinkingBlock: true` 写进 Pi 设置并重载 |
+| `/yancyui status` | 显示当前设置和补丁状态 |
 
 示例：
 
 ```
-/fold off            # 暂时停止折叠，扩展仍加载着
-/fold preview        # 保留汇总，去掉预览块
-/fold turn           # 不要再追加每轮的页脚
-/fold status         # 现在到底开了什么？
+/yancyui off            # 暂时停止折叠，扩展仍加载着
+/yancyui preview        # 保留汇总，去掉预览块
+/yancyui turn           # 不要再追加每轮的页脚
+/yancyui status         # 现在到底开了什么？
 ```
 
 改动**立即生效**于新产生的行，已经渲染好的行也会针对你改动的那部分重绘。设置持久化到
-`fold.json`（见下）并在重启后保留。`/fold` 的总开关也会被保存，所以 `/fold init`
+`yancy-ui.json`（见下）并在重启后保留。`/yancyui` 的总开关也会被保存，所以 `/yancyui init`
 只用于一次性设置 `hideThinkingBlock`。
 
 ## 配置
 
-### `fold.json`
+### `yancy-ui.json`
 
-`/fold` 会写到这里：
+`/yancyui` 会写到这里：
 
 | 平台 | 路径 |
 |---|---|
-| 默认 | `~/.pi/agent/fold.json` |
-| 自定义 agent 目录 | `$PI_CODING_AGENT_DIR/fold.json` |
+| 默认 | `~/.pi/agent/yancyui.json` |
+| 自定义 agent 目录 | `$PI_CODING_AGENT_DIR/yancyui.json` |
 
 路径来自 Pi 自己的 `getAgentDir()`，所以它会跟随你的 Pi 安装位置，而不是靠猜。
 
@@ -337,7 +337,7 @@ pi-yancy-ui 不新增任何按键，只复用 Pi 的：
 }
 ```
 
-这个文件只在扩展加载时读取一次。请在 Pi 停止时编辑，或者直接用 `/fold` 做实时修改。
+这个文件只在扩展加载时读取一次。请在 Pi 停止时编辑，或者直接用 `/yancyui` 做实时修改。
 
 ### `hideThinkingBlock`
 
@@ -348,48 +348,48 @@ pi-yancy-ui 不新增任何按键，只复用 Pi 的：
 { "hideThinkingBlock": true }
 ```
 
-`/fold init` 会替你写好。`ctrl+t` 切换的也是同一个设置并且会持久化，所以你手动展开过一次思考
+`/yancyui init` 会替你写好。`ctrl+t` 切换的也是同一个设置并且会持久化，所以你手动展开过一次思考
 之后，折叠就会一直关着，直到你再隐藏回去。
 
 ### 命令行参数
 
 ```
-pi --fold     # 启动时开启折叠，覆盖 fold.json
+pi --yancyui     # 启动时开启折叠，覆盖 yancy-ui.json
 ```
 
-**没有** `--no-fold`：布尔参数无法从命令行取反（Pi 会报 unknown option）。要用 `/fold off`
-或直接改 `fold.json`。
+**没有** `--no-fold`：布尔参数无法从命令行取反（Pi 会报 unknown option）。要用 `/yancyui off`
+或直接改 `yancy-ui.json`。
 
 ## 关掉某一部分
 
 | 我想要… | 这么做 |
 |---|---|
-| 完全不要折叠，但扩展还留着 | `/fold off` |
-| 要折叠，但不要预览 | `/fold preview` |
-| 只要汇总，不要预览也不要提示 | `/fold preview` + `/fold hints` |
-| 只折工具，不动思考 | `/fold thinking` |
-| 不要每轮页脚 | `/fold turn` |
-| 只折思考，不动工具 | `/fold tools` |
+| 完全不要折叠，但扩展还留着 | `/yancyui off` |
+| 要折叠，但不要预览 | `/yancyui preview` |
+| 只要汇总，不要预览也不要提示 | `/yancyui preview` + `/yancyui hints` |
+| 只折工具，不动思考 | `/yancyui thinking` |
+| 不要每轮页脚 | `/yancyui turn` |
+| 只折思考，不动工具 | `/yancyui tools` |
 
-`/fold off` 会让扩展保持加载并继续响应 `/fold`，方便和 Pi 的原生渲染来回对比。
+`/yancyui off` 会让扩展保持加载并继续响应 `/yancyui`，方便和 Pi 的原生渲染来回对比。
 要彻底移除扩展，见[卸载](#卸载)。
 
 ## 疑难排查
 
 **思考块没有折叠 / 还是 Pi 的 `Thinking...`。**
 
-运行 `/fold init`（如果提示了再重载一次）。Pi 必须处于 `hideThinkingBlock: true`，而它只在启动
+运行 `/yancyui init`（如果提示了再重载一次）。Pi 必须处于 `hideThinkingBlock: true`，而它只在启动
 时读一次。`ctrl+t` 也会翻转这个设置，所以如果你手动展开过思考，再隐藏回去即可。
 
-**`/fold status` 显示 `patch=no`。**
+**`/yancyui status` 显示 `patch=no`。**
 
 用于装饰思考标签的私有钩子（`AssistantMessageComponent.prototype.updateContent`）
 在你这个 Pi 版本里已经找不到了。思考会退回 Pi 的原生渲染，其它功能照常工作。请带上你的 Pi
 版本提个 issue。
 
-**改完 `fold.json` 没反应。**
+**改完 `yancy-ui.json` 没反应。**
 
-这个文件在加载时读取。实时修改请用 `/fold …`，或者重启 Pi。
+这个文件在加载时读取。实时修改请用 `/yancyui …`，或者重启 Pi。
 
 **显示错乱 / 在两种排版之间来回跳。**
 
@@ -401,7 +401,7 @@ pi --fold     # 启动时开启折叠，覆盖 fold.json
 预览会按可见宽度截断，汇总行和提示行都用 `visibleWidth` 计量，因此 emoji 宽度的终端里也能对齐。
 如果仍有错位，请附上终端类型和宽度反馈。
 
-**`/fold init` 提示写不了设置。**
+**`/yancyui init` 提示写不了设置。**
 
 agent 目录不可写。修一下 `~/.pi/agent` 的权限，或者把 `PI_CODING_AGENT_DIR` 指到一个可写目录。
 
@@ -412,7 +412,7 @@ agent 目录不可写。修一下 `~/.pi/agent` 的权限，或者把 `PI_CODING
 通过一个小的兼容层（`host.ts`）去解析它，并且是**软失败**的。钩子找不到只会让思考折叠失效，
 别的功能不受影响，会话也绝不会因此崩掉。
 
-**Pi 升级之后。** 工具折叠和轮次汇总应当继续工作。如果私有钩子挪了位置，`/fold status` 会变成
+**Pi 升级之后。** 工具折叠和轮次汇总应当继续工作。如果私有钩子挪了位置，`/yancyui status` 会变成
 `patch=no`，思考退回原生渲染。
 
 **平台。** 纯 Node API，没有 shell 调用，也没有平台相关代码。配置目录来自 `getAgentDir()`，
@@ -426,10 +426,10 @@ agent 目录不可写。修一下 `~/.pi/agent` 的权限，或者把 `PI_CODING
 ## 卸载
 
 ```bash
-pi remove /path/to/pi-ext
+pi remove /path/to/pi-yancy-ui
 ```
 
-或者删掉 `~/.pi/agent/extensions/` 下的软链/副本，再删除 `~/.pi/agent/fold.json`。
+或者删掉 `~/.pi/agent/extensions/` 下的软链/副本，再删除 `~/.pi/agent/yancyui.json`。
 若要同时恢复 Pi 对思考的默认行为，要么停用扩展，要么在 `~/.pi/agent/settings.json`
 里设置 `hideThinkingBlock: false`。
 
