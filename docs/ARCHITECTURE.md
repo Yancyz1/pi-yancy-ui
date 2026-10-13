@@ -220,6 +220,11 @@ gallery](https://pi.dev/packages) indexes npm packages whose `keywords` contain
   registries.
 - `files` ships `extensions/`, `docs/`, both READMEs, and the license. The test,
   smoke, benchmark, and host-verification scripts stay out of the tarball.
+- `publishConfig` pins the publish target to the official npm registry. A machine that
+  defaults to `registry.npmmirror.com` for install speed cannot publish there: that
+  mirror is read-only (it answers 403), and the gallery only indexes the official
+  registry anyway. Pinning the target in the manifest keeps `npm publish` correct no
+  matter which registry the shell is pointed at.
 - Release flow: `npm version <patch|minor|major>` (which commits and tags), then
   `git push --follow-tags`, then `npm publish`. The gallery entry refreshes on its own.
 
