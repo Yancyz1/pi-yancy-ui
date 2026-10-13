@@ -70,20 +70,29 @@ Each finished tool call is a single status line (compact mode, the default).
 
 ## Install
 
-### Recommended: install as a Pi package
-
-From the package directory:
+### Recommended: install from npm
 
 ```bash
-pi install /path/to/pi-yancy-ui
+pi install npm:pi-yancy-ui
 ```
 
-`pi` reads the `pi.extensions` field in `package.json` and adds the extension to
-your settings, so it loads on every start.
+`pi` reads the `pi.extensions` field in `package.json`, installs the package, and adds
+the extension to your settings, so it loads on every start.
 
 ```bash
-pi list              # confirm it is registered
-pi remove /path/to/pi-yancy-ui   # remove it again
+pi list                    # confirm it is registered
+pi update npm:pi-yancy-ui  # upgrade to the latest release
+pi remove npm:pi-yancy-ui  # remove it again
+```
+
+### From a git ref or a local checkout
+
+The package also installs straight from the repository, which is useful for testing a
+branch before it is released:
+
+```bash
+pi install git:github.com/Yancyz1/pi-yancy-ui   # latest main
+pi install ./pi-yancy-ui                        # a local checkout
 ```
 
 ### Alternative: symlink into the extensions folder
@@ -457,8 +466,11 @@ Implementation details, the compatibility shim, and the benchmark live in
 ## Uninstall
 
 ```bash
-pi remove /path/to/pi-yancy-ui
+pi remove npm:pi-yancy-ui
 ```
+
+If you installed from a git ref or a local path instead, pass that same source:
+`pi remove git:github.com/Yancyz1/pi-yancy-ui` or `pi remove ./pi-yancy-ui`.
 
 Or delete the symlink/copy from `~/.pi/agent/extensions/`, and remove
 `~/.pi/agent/yancyui.json`. To also restore Pi's defaults for thinking, either run
@@ -469,7 +481,7 @@ Or delete the symlink/copy from `~/.pi/agent/extensions/`, and remove
 
 ```bash
 npm run typecheck    # tsc --noEmit
-npm test             # 87 assertions: folding, thinking, summary, config (exit 1 on failure)
+npm test             # 99 assertions: folding, thinking, summary, config (exit 1 on failure)
 npm run smoke        # human-readable render dump (no TUI, no model)
 npm run bench        # collapsed-render cost vs native
 npm run verify:host  # host shim under Pi's real virtualModules loader

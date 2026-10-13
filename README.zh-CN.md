@@ -67,20 +67,28 @@
 
 ## 安装
 
-### 推荐：作为 Pi 包安装
-
-在包目录下执行：
+### 推荐：从 npm 安装
 
 ```bash
-pi install /path/to/pi-yancy-ui
+pi install npm:pi-yancy-ui
 ```
 
-`pi` 会读取 `package.json` 里的 `pi.extensions` 字段，把扩展登记进你的设置，之后每次启动
-都会加载。
+`pi` 会读取 `package.json` 里的 `pi.extensions` 字段，安装包并把它登记进你的设置，
+之后每次启动都会加载。
 
 ```bash
-pi list                     # 确认已登记
-pi remove /path/to/pi-yancy-ui   # 移除
+pi list                    # 确认已登记
+pi update npm:pi-yancy-ui  # 升级到最新版本
+pi remove npm:pi-yancy-ui  # 移除
+```
+
+### 或者：从 git 引用或本地检出安装
+
+也可以直接从仓库安装，适合在版本发布前试某个分支：
+
+```bash
+pi install git:github.com/Yancyz1/pi-yancy-ui   # 最新的 main
+pi install ./pi-yancy-ui                        # 本地检出
 ```
 
 ### 或者：软链到扩展目录
@@ -426,8 +434,11 @@ agent 目录不可写。修一下 `~/.pi/agent` 的权限，或者把 `PI_CODING
 ## 卸载
 
 ```bash
-pi remove /path/to/pi-yancy-ui
+pi remove npm:pi-yancy-ui
 ```
+
+如果当初用的是 git 引用或本地路径，就把同一个来源传给它：
+`pi remove git:github.com/Yancyz1/pi-yancy-ui` 或 `pi remove ./pi-yancy-ui`。
 
 或者删掉 `~/.pi/agent/extensions/` 下的软链/副本，再删除 `~/.pi/agent/yancyui.json`。
 若要同时恢复 Pi 对思考的默认行为，要么停用扩展，要么在 `~/.pi/agent/settings.json`
@@ -437,7 +448,7 @@ pi remove /path/to/pi-yancy-ui
 
 ```bash
 npm run typecheck    # tsc --noEmit
-npm test             # 87 条断言：折叠、思考、汇总、配置（失败时 exit 1）
+npm test             # 99 条断言：折叠、思考、汇总、配置（失败时 exit 1）
 npm run smoke        # 人读的渲染 dump（无需 TUI、无需模型）
 npm run bench        # 折叠渲染 vs 原生的耗时
 npm run verify:host  # 在 Pi 真实的 virtualModules 加载路径下验证兼容层

@@ -192,7 +192,7 @@ native returns an empty string when collapsed while pi-yancy-ui renders a previe
 
 ## Testing
 
-- `npm test` — 97 assertions across tool folding (including component recycling,
+- `npm test` — 99 assertions across tool folding (including component recycling,
   every tool summary, error paths, partial results, compact single-line mode), thinking
   labels and timing, turn summary events and gating, config validation, and
   factory/command integration.
@@ -207,6 +207,21 @@ The suite is mutation-tested: 10 of 11 deliberate regressions are caught. The on
 survivor is the language-guard mutation, because `highlightCode` returns plain text in
 a headless process, making highlighted and unhighlighted output identical; that path
 is covered by `verify:host` instead.
+
+## Distribution
+
+The package is published to npm as `pi-yancy-ui`. The [Pi package
+gallery](https://pi.dev/packages) indexes npm packages whose `keywords` contain
+`pi-package` — there is no submission step, and git installs are never listed there.
+
+- Host packages (`@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`) live in
+  `peerDependencies` with a `"*"` range, never in `dependencies`. Pi maps those modules
+  itself; a bundled copy would bypass the mapping and create duplicate classes and
+  registries.
+- `files` ships `extensions/`, `docs/`, both READMEs, and the license. The test,
+  smoke, benchmark, and host-verification scripts stay out of the tarball.
+- Release flow: `npm version <patch|minor|major>` (which commits and tags), then
+  `git push --follow-tags`, then `npm publish`. The gallery entry refreshes on its own.
 
 ## Known limitations
 

@@ -4,9 +4,26 @@
 	"description": "Claude Code-style folding of Pi's thinking blocks and tool calls.",
 	"type": "module",
 	"license": "MIT",
+	"author": "yancyz1",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Yancyz1/pi-yancy-ui.git"
+	},
+	"homepage": "https://github.com/Yancyz1/pi-yancy-ui#readme",
+	"bugs": {
+		"url": "https://github.com/Yancyz1/pi-yancy-ui/issues"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
 	"keywords": [
 		"pi-package",
-		"pi-extension"
+		"pi-extension",
+		"pi",
+		"pi-coding-agent",
+		"claude-code",
+		"folding",
+		"tui"
 	],
 	"files": [
 		"extensions",
